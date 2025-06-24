@@ -12,7 +12,7 @@ from app import app
 
 def run_flask():
     """Запускает Flask приложение"""
-    app.run(host='127.0.0.1', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=10000, debug=False)
 
 def start_cloudflare_tunnel():
     """Запускает Cloudflare Tunnel"""

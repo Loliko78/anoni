@@ -37,10 +37,15 @@ app.logger.disabled = True
 # Проверка HTTPS (или Tor)
 @app.before_request
 def enforce_https():
+    # Разрешаем доступ через ngrok и другие туннели
+    if (request.host.startswith('localhost') or 
+        request.host.startswith('127.0.0.1') or 
+        request.host.endswith('.ngrok.io') or
+        request.host.endswith('.ngrok-free.app') or
+        request.host.endswith('.onion')):
+        return None
     # Временно отключаем для тестирования
     return None
-    # if not (request.is_secure or request.headers.get('X-Forwarded-Proto', '') == 'https' or request.host.startswith('localhost') or request.host.startswith('127.0.0.1') or request.host.endswith('.onion')):
-    #     return 'Доступ только через HTTPS или Tor', 403
 
 # Генерируем безопасный ключ для шифрования ников
 NICKNAME_KEY = os.environ.get('NICKNAME_KEY', os.urandom(32))
