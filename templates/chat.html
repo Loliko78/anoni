@@ -1,0 +1,451 @@
+{% extends "base.html" %}
+
+{% block title %}Чат с {{ other_user.encrypted_nickname }}{% endblock %}
+
+{% block content %}
+<style>
+.chat-header {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+}
+.chat-header-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.chat-header-avatar-img {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--bg-secondary);
+}
+</style>
+<div class="container">
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="chat-header-avatar">
+                <img src="{{ url_for('static', filename=other_user.avatar or 'avatars/cybermask.svg') }}" alt="avatar" class="chat-header-avatar-img">
+            </div>
+            <h2>Чат с {{ other_user.encrypted_nickname }}</h2>
+            <div class="key-info">
+                <button onclick="showKeyModal()">Управление ключами</button>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">Назад</a>
+            </div>
+        </div>
+        
+        <div class="messages-container" id="messages">
+            {% for message in messages %}
+            <div class="message {% if message.sender_id == current_user.id %}sent{% else %}received{% endif %}{% if message.deleted %} deleted{% endif %}">
+                <div class="message-content">
+                    <span class="message-text">{{ message.content.split(' [file:')[0] }}</span>
+                    {% if '[file:' in message.content %}
+                        {% set file_url = message.content.split('[file:')[1].split(']')[0] %}
+                        {% if file_url.endswith('.png') or file_url.endswith('.jpg') or file_url.endswith('.jpeg') or file_url.endswith('.gif') or file_url.endswith('.webp') %}
+                            <img src="{{ file_url }}" style="max-width:180px;max-height:180px;margin-top:8px;border-radius:8px;">
+                        {% elif file_url.endswith('.mp4') or file_url.endswith('.mov') or file_url.endswith('.avi') %}
+                            <video src="{{ file_url }}" controls style="max-width:220px;max-height:180px;margin-top:8px;border-radius:8px;"></video>
+                        {% elif file_url.endswith('.mp3') or file_url.endswith('.wav') %}
+                            <audio src="{{ file_url }}" controls style="margin-top:8px;"></audio>
+                        {% else %}
+                            <div style="margin-top:8px;">
+                                <a href="{{ file_url }}" target="_blank" class="file-download-link">
+                                    📎 Скачать файл
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                    <span class="message-time">{{ message.timestamp.strftime('%H:%M') }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="chat-input-container">
+            <form class="chat-input-form" id="messageForm" enctype="multipart/form-data">
+                <div class="chat-input-group">
+                    <textarea 
+                        class="chat-input" 
+                        id="messageInput" 
+                        placeholder="Введите сообщение... (Enter для отправки, Shift+Enter для новой строки)" 
+                        required
+                        rows="1"
+                    ></textarea>
+                </div>
+                <input type="file" name="file" id="fileInput" accept="image/*,video/*" style="margin-left:10px;">
+                <button type="submit" class="chat-send-btn">Отправить</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal для управления ключами -->
+<div id="keyModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h3>Управление ключами шифрования</h3>
+        <div class="key-management">
+            <div class="key-section">
+                <h4>Текущий ключ:</h4>
+                <div class="current-key" id="currentKey">Не установлен</div>
+            </div>
+            <div class="key-section">
+                <h4>Установить новый ключ:</h4>
+                <input type="text" id="newKey" placeholder="Введите ключ шифрования" class="form-control">
+                <button onclick="setKey()" class="btn btn-primary">Установить ключ</button>
+            </div>
+            <div class="key-section">
+                <h4>Генерация ключа:</h4>
+                <button onclick="generateKey()" class="btn btn-secondary">Сгенерировать новый ключ</button>
+            </div>
+            {% if show_sync_button %}
+            <div class="key-section">
+                <h4>Синхронизация:</h4>
+                <button onclick="syncKeys()" class="btn btn-secondary">Синхронизировать ключи</button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script>
+    const socket = io();
+    const currentUserId = {{ current_user.id }};
+    const otherUserId = {{ other_user.id }};
+    const chatId = {{ chat.id }};
+    let currentKey = localStorage.getItem('chat_key_' + otherUserId) || null;
+    const anonymousMode = {{ 'true' if anonymous_mode else 'false' }};
+    
+    // Присоединяемся к комнате чата
+    socket.emit('join_chat', {
+        chat_id: chatId,
+        user_id: currentUserId
+    });
+    
+    // Расшифровываем существующие сообщения при загрузке
+    async function decryptExistingMessages() {
+        const messagesContainer = document.getElementById('messages');
+        const messageElements = messagesContainer.querySelectorAll('.message');
+        
+        for (let element of messageElements) {
+            const messageText = element.querySelector('.message-text');
+            if (messageText && messageText.textContent !== '[ошибка чтения сообщения]') {
+                try {
+                    const decryptedText = await decryptMessage(messageText.textContent, currentKey);
+                    messageText.textContent = decryptedText;
+                } catch (error) {
+                    console.error('Ошибка расшифровки существующего сообщения:', error);
+                }
+            }
+        }
+        
+        // Прокручиваем вниз после расшифровки
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    
+    // Вызываем расшифровку при загрузке
+    decryptExistingMessages();
+    
+    // Функции для работы с ключами
+    function showKeyModal() {
+        document.getElementById('keyModal').style.display = 'block';
+    }
+    
+    function setKey() {
+        const newKey = document.getElementById('newKey').value.trim();
+        if (newKey) {
+            currentKey = newKey;
+            localStorage.setItem('chat_key_' + otherUserId, newKey);
+            document.getElementById('currentKey').textContent = newKey;
+            document.getElementById('newKey').value = '';
+            document.getElementById('keyModal').style.display = 'none';
+            
+            // Автоматически перешифровываем все сообщения с новым ключом
+            decryptExistingMessages();
+        }
+    }
+    
+    async function generateKey() {
+        try {
+            const response = await fetch('/user/generate_key_json', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            const result = await response.json();
+            if (result.success) {
+                const newKey = result.key;
+                currentKey = newKey;
+                localStorage.setItem('chat_key_' + otherUserId, newKey);
+                document.getElementById('currentKey').textContent = newKey;
+                document.getElementById('newKey').value = newKey;
+                
+                // Автоматически перешифровываем все сообщения с новым ключом
+                decryptExistingMessages();
+            } else {
+                alert(result.message || 'Ошибка генерации ключа');
+            }
+        } catch (error) {
+            alert('Ошибка сети при генерации ключа');
+        }
+    }
+    
+    async function syncKeys() {
+        try {
+            const response = await fetch(`/chat/{{ chat.id }}/sync_keys`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            const result = await response.json();
+            if (result.success) {
+                const newKey = result.chat_key;
+                currentKey = newKey;
+                localStorage.setItem('chat_key_' + otherUserId, newKey);
+                document.getElementById('currentKey').textContent = newKey;
+                document.getElementById('newKey').value = newKey;
+                
+                // Автоматически перешифровываем все сообщения с новым ключом
+                decryptExistingMessages();
+                
+                alert('Ключи успешно синхронизированы');
+            } else {
+                alert(result.message || 'Ошибка синхронизации ключей');
+            }
+        } catch (error) {
+            alert('Ошибка сети при синхронизации ключей');
+        }
+    }
+    
+    // Закрытие модального окна
+    document.querySelector('.close').addEventListener('click', function() {
+        document.getElementById('keyModal').style.display = 'none';
+    });
+    
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('keyModal');
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    });
+    
+    // Функция шифрования
+    async function encryptMessage(text, key) {
+        if (!key) return text;
+        
+        try {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(text);
+            
+            // Создаем ключ правильной длины (256 бит = 32 байта)
+            let keyBytes;
+            if (key.length < 32) {
+                // Если ключ короче 32 байт, дополняем его
+                const keyEncoder = new TextEncoder();
+                const originalKey = keyEncoder.encode(key);
+                keyBytes = new Uint8Array(32);
+                keyBytes.set(originalKey);
+                // Заполняем оставшиеся байты повторением ключа
+                for (let i = originalKey.length; i < 32; i++) {
+                    keyBytes[i] = originalKey[i % originalKey.length];
+                }
+            } else if (key.length > 32) {
+                // Если ключ длиннее 32 байт, обрезаем его
+                const keyEncoder = new TextEncoder();
+                const originalKey = keyEncoder.encode(key);
+                keyBytes = originalKey.slice(0, 32);
+            } else {
+                // Если ключ ровно 32 байта
+                const keyEncoder = new TextEncoder();
+                keyBytes = keyEncoder.encode(key);
+            }
+            
+            const cryptoKey = await crypto.subtle.importKey(
+                'raw',
+                keyBytes,
+                { name: 'AES-GCM' },
+                false,
+                ['encrypt']
+            );
+            
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const encrypted = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv: iv },
+                cryptoKey,
+                data
+            );
+            
+            const encryptedArray = new Uint8Array(encrypted);
+            const combined = new Uint8Array(iv.length + encryptedArray.length);
+            combined.set(iv);
+            combined.set(encryptedArray, iv.length);
+            
+            return btoa(String.fromCharCode(...combined));
+        } catch (error) {
+            console.error('Ошибка шифрования:', error);
+            return text; // Возвращаем исходный текст если шифрование не удалось
+        }
+    }
+    
+    // Функция дешифрования
+    async function decryptMessage(encryptedText, key) {
+        if (!key) return encryptedText;
+        
+        try {
+            const combined = new Uint8Array(atob(encryptedText).split('').map(c => c.charCodeAt(0)));
+            const iv = combined.slice(0, 12);
+            const encrypted = combined.slice(12);
+            
+            // Создаем ключ правильной длины (256 бит = 32 байта)
+            let keyBytes;
+            if (key.length < 32) {
+                // Если ключ короче 32 байт, дополняем его
+                const keyEncoder = new TextEncoder();
+                const originalKey = keyEncoder.encode(key);
+                keyBytes = new Uint8Array(32);
+                keyBytes.set(originalKey);
+                // Заполняем оставшиеся байты повторением ключа
+                for (let i = originalKey.length; i < 32; i++) {
+                    keyBytes[i] = originalKey[i % originalKey.length];
+                }
+            } else if (key.length > 32) {
+                // Если ключ длиннее 32 байт, обрезаем его
+                const keyEncoder = new TextEncoder();
+                const originalKey = keyEncoder.encode(key);
+                keyBytes = originalKey.slice(0, 32);
+            } else {
+                // Если ключ ровно 32 байта
+                const keyEncoder = new TextEncoder();
+                keyBytes = keyEncoder.encode(key);
+            }
+            
+            const cryptoKey = await crypto.subtle.importKey(
+                'raw',
+                keyBytes,
+                { name: 'AES-GCM' },
+                false,
+                ['decrypt']
+            );
+            
+            const decrypted = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv: iv },
+                cryptoKey,
+                encrypted
+            );
+            
+            return new TextDecoder().decode(decrypted);
+        } catch (error) {
+            console.error('Ошибка дешифрования:', error);
+            return encryptedText; // Возвращаем исходный текст если не удалось расшифровать
+        }
+    }
+    
+    // Отправка сообщения через форму
+    const messageForm = document.getElementById('messageForm');
+    const messageInput = document.getElementById('messageInput');
+    const fileInput = document.getElementById('fileInput');
+    const messagesContainer = document.getElementById('messages');
+
+    messageForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const text = messageInput.value.trim();
+        const file = fileInput.files[0];
+        if (!text && !file) return;
+        if (file) {
+            const formData = new FormData();
+            formData.append('content_enc', text);
+            formData.append('file', file);
+            await fetch(window.location.href, {
+                method: 'POST',
+                body: formData
+            });
+            messageInput.value = '';
+            fileInput.value = '';
+            messageInput.style.height = 'auto';
+            return;
+        }
+        // --- Шифруем текст перед отправкой ---
+        let encrypted = text;
+        if (anonymousMode && currentKey) {
+            encrypted = await encryptMessage(text, currentKey);
+        }
+        socket.emit('send_message', {
+            content: encrypted,
+            recipient_id: otherUserId,
+            sender_id: currentUserId
+        });
+        messageInput.value = '';
+        messageInput.style.height = 'auto';
+    });
+
+    // Получение новых сообщений (и своих тоже)
+    socket.on('new_message', async function(data) {
+        if ((data.sender_id === otherUserId && data.recipient_id === currentUserId) ||
+            (data.sender_id === currentUserId && data.recipient_id === otherUserId)) {
+            let decryptedText = data.content;
+            if (anonymousMode && currentKey) {
+                decryptedText = await decryptMessage(data.content, currentKey);
+            }
+            const messageDiv = document.createElement('div');
+            messageDiv.className = data.sender_id === currentUserId ? 'message sent' : 'message received';
+            const now = new Date();
+            const timeString = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <span class="message-text">${decryptedText}</span>
+                    <span class="message-time">${timeString}</span>
+                </div>
+            `;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    });
+    
+    // Автофокус на поле ввода
+    if (messageInput) {
+        messageInput.focus();
+    }
+    
+    // Отключаемся от комнаты при закрытии страницы
+    window.addEventListener('beforeunload', function() {
+        socket.emit('leave_chat', {
+            chat_id: chatId,
+            user_id: currentUserId
+        });
+    });
+</script>
+
+<style>
+.chat-header {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+}
+.chat-header-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.chat-header-avatar-img {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--bg-secondary);
+}
+</style>
+{% endblock %} 
