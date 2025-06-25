@@ -1,1 +1,11 @@
-{}
+# Cloudflare Tunnel Configuration
+tunnel: your-tunnel-id
+credentials-file: .cloudflared/your-tunnel-id.json
+
+ingress:
+  # Your Flask app
+  - hostname: your-app.your-domain.com
+    service: http://localhost:5000
+  
+  # Catch-all rule
+  - service: http_status:404

@@ -8,4 +8,6 @@ Werkzeug
 flask-socketio
 python-socketio
 gunicorn
-eventlet 
+eventlet
+requests
+pathlib 
