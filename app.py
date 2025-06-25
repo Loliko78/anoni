@@ -1229,35 +1229,67 @@ def sync_group_keys(invite_link):
 # WebSocket handlers
 @socketio.on('join_chat')
 def on_join_chat(data):
-    chat_id = data['chat_id']
-    user_id = data['user_id']
-    room = f'chat_{chat_id}'
-    join_room(room)
-    print(f'User {user_id} joined chat {chat_id}')
+    try:
+        chat_id = data.get('chat_id')
+        user_id = data.get('user_id')
+        
+        if not chat_id or not user_id:
+            print(f'Missing required fields in join_chat: {data}')
+            return
+            
+        room = f'chat_{chat_id}'
+        join_room(room)
+        print(f'User {user_id} joined chat {chat_id}')
+    except Exception as e:
+        print(f'Error in join_chat: {e}')
 
 @socketio.on('join_group')
 def on_join_group(data):
-    invite_link = data['invite_link']
-    user_id = data['user_id']
-    room = f'group_{invite_link}'
-    join_room(room)
-    print(f'User {user_id} joined group {invite_link}')
+    try:
+        invite_link = data.get('invite_link')
+        user_id = data.get('user_id')
+        
+        if not invite_link or not user_id:
+            print(f'Missing required fields in join_group: {data}')
+            return
+            
+        room = f'group_{invite_link}'
+        join_room(room)
+        print(f'User {user_id} joined group {invite_link}')
+    except Exception as e:
+        print(f'Error in join_group: {e}')
 
 @socketio.on('leave_chat')
 def on_leave_chat(data):
-    chat_id = data['chat_id']
-    user_id = data['user_id']
-    room = f'chat_{chat_id}'
-    leave_room(room)
-    print(f'User {user_id} left chat {chat_id}')
+    try:
+        chat_id = data.get('chat_id')
+        user_id = data.get('user_id')
+        
+        if not chat_id or not user_id:
+            print(f'Missing required fields in leave_chat: {data}')
+            return
+            
+        room = f'chat_{chat_id}'
+        leave_room(room)
+        print(f'User {user_id} left chat {chat_id}')
+    except Exception as e:
+        print(f'Error in leave_chat: {e}')
 
 @socketio.on('leave_group')
 def on_leave_group(data):
-    invite_link = data['invite_link']
-    user_id = data['user_id']
-    room = f'group_{invite_link}'
-    leave_room(room)
-    print(f'User {user_id} left group {invite_link}')
+    try:
+        invite_link = data.get('invite_link')
+        user_id = data.get('user_id')
+        
+        if not invite_link or not user_id:
+            print(f'Missing required fields in leave_group: {data}')
+            return
+            
+        room = f'group_{invite_link}'
+        leave_room(room)
+        print(f'User {user_id} left group {invite_link}')
+    except Exception as e:
+        print(f'Error in leave_group: {e}')
 
 @socketio.on('send_message')
 def on_send_message(data):
