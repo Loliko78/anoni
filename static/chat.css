@@ -272,11 +272,27 @@
         max-height: 85vh;
         min-height: 380px;
     }
+    .chat-input-group {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+    }
     .chat-send-btn {
-        font-size: 1.2em;
-        min-width: 100px;
-        height: 48px;
-        padding: 0 18px;
+        font-size: 1.3em;
+        min-width: 110px;
+        height: 52px;
+        padding: 0 20px;
+        margin-top: -8px;
+    }
+    .file-attach-label {
+        margin-top: -8px;
+        margin-bottom: 8px;
+    }
+    .channel-post-form textarea,
+    .channel-comment-form input[type="text"] {
+        width: 100%;
+        min-height: 60px;
+        resize: vertical;
     }
     .chat-header .key-info button {
         font-size: 0.8em;
@@ -294,10 +310,19 @@
         min-height: 260px;
     }
     .chat-send-btn {
-        font-size: 1.1em;
-        min-width: 90px;
-        height: 40px;
-        padding: 0 12px;
+        font-size: 1.2em;
+        min-width: 100px;
+        height: 48px;
+        padding: 0 16px;
+        margin-top: -6px;
+    }
+    .file-attach-label {
+        margin-top: -6px;
+        margin-bottom: 6px;
+    }
+    .channel-post-form textarea,
+    .channel-comment-form input[type="text"] {
+        min-height: 50px;
     }
     .chat-header .key-info button {
         font-size: 0.7em;
