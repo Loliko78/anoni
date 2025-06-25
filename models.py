@@ -18,6 +18,11 @@ class User(UserMixin, db.Model):
     chats1 = relationship('Chat', foreign_keys='Chat.user1_id', backref='user1', lazy=True)
     chats2 = relationship('Chat', foreign_keys='Chat.user2_id', backref='user2', lazy=True)
 
+    @property
+    def encrypted_nickname(self):
+        """Свойство для обратной совместимости"""
+        return self.nickname_enc
+
 class Chat(db.Model):
     id = Column(Integer, primary_key=True)
     user1_id = Column(Integer, ForeignKey('user.id'), nullable=False)

@@ -25,6 +25,8 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(32).hex())
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///harvest.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')
+
+# Создаем папку uploads если её нет
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db.init_app(app)
@@ -1676,24 +1678,46 @@ def send_message(chat_id):
         # Обрабатываем файл, если он есть
         file_url = None
         if file and file.filename:
-            # Сохраняем файл
-            filename = secure_filename(file.filename)
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            unique_filename = f"chat_{chat_id}_{timestamp}_{filename}"
-            
-            # Создаем папку uploads если её нет
-            upload_folder = os.path.join(app.root_path, 'static', 'uploads')
-            os.makedirs(upload_folder, exist_ok=True)
-            
-            file_path = os.path.join(upload_folder, unique_filename)
-            file.save(file_path)
-            file_url = f"/static/uploads/{unique_filename}"
-            
-            # Добавляем информацию о файле к контенту
-            if content:
-                content += f" [file:{file_url}]"
-            else:
-                content = f"[file:{file_url}]"
+            try:
+                # Проверяем размер файла (максимум 10MB)
+                file.seek(0, 2)  # Перемещаемся в конец файла
+                file_size = file.tell()
+                file.seek(0)  # Возвращаемся в начало
+                
+                if file_size > 10 * 1024 * 1024:  # 10MB
+                    return jsonify({'success': False, 'message': 'Файл слишком большой (максимум 10MB)'}), 400
+                
+                # Проверяем расширение файла
+                allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'mp4', 'mov', 'avi', 'mp3', 'wav', 'pdf', 'doc', 'docx', 'txt', 'zip', 'rar', '7z'}
+                file_ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+                
+                if file_ext not in allowed_extensions:
+                    return jsonify({'success': False, 'message': f'Недопустимый тип файла. Разрешены: {", ".join(allowed_extensions)}'}), 400
+                
+                # Сохраняем файл
+                filename = secure_filename(file.filename)
+                if not filename:
+                    return jsonify({'success': False, 'message': 'Недопустимое имя файла'}), 400
+                
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                unique_filename = f"chat_{chat_id}_{timestamp}_{filename}"
+                
+                # Создаем папку uploads если её нет
+                upload_folder = os.path.join(app.root_path, 'static', 'uploads')
+                os.makedirs(upload_folder, exist_ok=True)
+                
+                file_path = os.path.join(upload_folder, unique_filename)
+                file.save(file_path)
+                file_url = f"/static/uploads/{unique_filename}"
+                
+                # Добавляем информацию о файле к контенту
+                if content:
+                    content += f" [file:{file_url}]"
+                else:
+                    content = f"[file:{file_url}]"
+            except Exception as file_error:
+                print(f'Error saving file: {file_error}')
+                return jsonify({'success': False, 'message': 'Ошибка сохранения файла'}), 500
         
         # Сохраняем сообщение в базе данных
         new_message = Message(
@@ -1709,7 +1733,7 @@ def send_message(chat_id):
             'id': new_message.id,
             'chat_id': chat_id,
             'sender_id': current_user.id,
-            'sender_nickname': current_user.encrypted_nickname,
+            'sender_nickname': current_user.nickname_enc,
             'content': content,
             'timestamp': new_message.timestamp.isoformat(),
             'file_url': file_url
@@ -1724,7 +1748,9 @@ def send_message(chat_id):
     except Exception as e:
         db.session.rollback()
         print(f'Error in send_message route: {e}')
-        return jsonify({'success': False, 'message': 'Ошибка отправки сообщения'}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Ошибка отправки сообщения: {str(e)}'}), 500
 
 @app.route('/send_group_message/<invite_link>', methods=['POST'])
 @login_required
@@ -1751,24 +1777,46 @@ def send_group_message(invite_link):
         # Обрабатываем файл, если он есть
         file_url = None
         if file and file.filename:
-            # Сохраняем файл
-            filename = secure_filename(file.filename)
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            unique_filename = f"group_{group.id}_{timestamp}_{filename}"
-            
-            # Создаем папку uploads если её нет
-            upload_folder = os.path.join(app.root_path, 'static', 'uploads')
-            os.makedirs(upload_folder, exist_ok=True)
-            
-            file_path = os.path.join(upload_folder, unique_filename)
-            file.save(file_path)
-            file_url = f"/static/uploads/{unique_filename}"
-            
-            # Добавляем информацию о файле к контенту
-            if content:
-                content += f" [file:{file_url}]"
-            else:
-                content = f"[file:{file_url}]"
+            try:
+                # Проверяем размер файла (максимум 10MB)
+                file.seek(0, 2)  # Перемещаемся в конец файла
+                file_size = file.tell()
+                file.seek(0)  # Возвращаемся в начало
+                
+                if file_size > 10 * 1024 * 1024:  # 10MB
+                    return jsonify({'success': False, 'message': 'Файл слишком большой (максимум 10MB)'}), 400
+                
+                # Проверяем расширение файла
+                allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'mp4', 'mov', 'avi', 'mp3', 'wav', 'pdf', 'doc', 'docx', 'txt', 'zip', 'rar', '7z'}
+                file_ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+                
+                if file_ext not in allowed_extensions:
+                    return jsonify({'success': False, 'message': f'Недопустимый тип файла. Разрешены: {", ".join(allowed_extensions)}'}), 400
+                
+                # Сохраняем файл
+                filename = secure_filename(file.filename)
+                if not filename:
+                    return jsonify({'success': False, 'message': 'Недопустимое имя файла'}), 400
+                
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                unique_filename = f"group_{group.id}_{timestamp}_{filename}"
+                
+                # Создаем папку uploads если её нет
+                upload_folder = os.path.join(app.root_path, 'static', 'uploads')
+                os.makedirs(upload_folder, exist_ok=True)
+                
+                file_path = os.path.join(upload_folder, unique_filename)
+                file.save(file_path)
+                file_url = f"/static/uploads/{unique_filename}"
+                
+                # Добавляем информацию о файле к контенту
+                if content:
+                    content += f" [file:{file_url}]"
+                else:
+                    content = f"[file:{file_url}]"
+            except Exception as file_error:
+                print(f'Error saving file: {file_error}')
+                return jsonify({'success': False, 'message': 'Ошибка сохранения файла'}), 500
         
         # Сохраняем сообщение в базе данных
         new_message = Message(
@@ -1784,7 +1832,7 @@ def send_group_message(invite_link):
             'id': new_message.id,
             'group_id': group.id,
             'sender_id': current_user.id,
-            'sender_nickname': current_user.encrypted_nickname,
+            'sender_nickname': current_user.nickname_enc,
             'content': content,
             'timestamp': new_message.timestamp.isoformat(),
             'file_url': file_url
@@ -1799,7 +1847,9 @@ def send_group_message(invite_link):
     except Exception as e:
         db.session.rollback()
         print(f'Error in send_group_message route: {e}')
-        return jsonify({'success': False, 'message': 'Ошибка отправки сообщения'}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Ошибка отправки сообщения: {str(e)}'}), 500
 
 if __name__ == '__main__':
     with app.app_context():
