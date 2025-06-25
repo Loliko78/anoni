@@ -14,3 +14,4 @@ requests
 pathlib
 piexif
 wtforms
+Flask-CORS

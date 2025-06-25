@@ -17,8 +17,10 @@ import time
 from datetime import datetime, timedelta, UTC
 import random
 import base64
+from flask_cors import CORS
 
 app = Flask(__name__, instance_relative_config=True)
+CORS(app, resources={r"/*": {"origins": "*"}})
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(32).hex())
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///harvest.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -28,7 +30,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 db.init_app(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet', ping_timeout=60, ping_interval=25)
 
 # Отключаем все логи Flask
 log = logging.getLogger('werkzeug')
