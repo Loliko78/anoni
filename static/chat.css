@@ -288,16 +288,37 @@
 
 /* Дополнительная оптимизация для очень маленьких экранов */
 @media (max-width: 480px) {
-    .chat-container {
-        height: calc(100vh - 80px);
-        max-height: 75vh;
-        min-height: 260px;
+    .chat-input-form {
+        align-items: center !important;
+        gap: 8px !important;
     }
     .chat-send-btn {
+        font-size: 1.3em;
+        min-width: 120px;
+        height: 54px;
+        padding: 0 20px;
+        margin-bottom: 6px;
+        margin-top: 0;
+        border-radius: 18px;
+    }
+    .file-attach-label {
+        align-items: center;
+        height: 54px;
+        margin-bottom: 0;
+        margin-top: 0;
+    }
+    .chat-input {
+        min-height: 54px;
         font-size: 1.1em;
-        min-width: 90px;
-        height: 40px;
-        padding: 0 12px;
+        margin-bottom: 0;
+        margin-top: 0;
+    }
+    .chat-container {
+        padding-bottom: 10px;
+        padding-top: 10px;
+        height: calc(100vh - 120px);
+        max-height: 80vh;
+        min-height: 220px;
     }
     .chat-header .key-info button {
         font-size: 0.7em;

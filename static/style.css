@@ -2610,4 +2610,66 @@ input[type="file"]::file-selector-button:hover {
         min-height: 44px;
         font-size: 1em;
     }
+}
+
+@media (max-width: 480px) {
+    nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        z-index: 1002;
+        background: var(--bg-primary);
+        border-bottom: 2px solid var(--main-accent-color);
+        box-shadow: 0 2px 8px #0004;
+    }
+    .page-container {
+        padding-top: 54px !important;
+    }
+    nav a {
+        font-size: 1.2em;
+        padding: 14px 0;
+        width: 100%;
+        display: block;
+        text-align: center;
+    }
+    nav a:first-child, nav a.active {
+        font-size: 1.4em;
+        font-weight: bold;
+        color: var(--main-accent-color);
+        background: var(--bg-secondary);
+        border-bottom: 2px solid var(--main-accent-color);
+    }
+    .chat-input-form {
+        align-items: center !important;
+        gap: 8px !important;
+    }
+    .chat-send-btn {
+        font-size: 1.3em;
+        min-width: 120px;
+        height: 54px;
+        padding: 0 20px;
+        margin-bottom: 6px;
+        margin-top: 0;
+        border-radius: 18px;
+    }
+    .file-attach-label {
+        align-items: center;
+        height: 54px;
+        margin-bottom: 0;
+        margin-top: 0;
+    }
+    .chat-input {
+        min-height: 54px;
+        font-size: 1.1em;
+        margin-bottom: 0;
+        margin-top: 0;
+    }
+    .chat-container {
+        padding-bottom: 10px;
+        padding-top: 10px;
+        height: calc(100vh - 120px);
+        max-height: 80vh;
+        min-height: 220px;
+    }
 } 
