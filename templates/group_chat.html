@@ -460,31 +460,47 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
         e.preventDefault();
         const text = messageInput.value.trim();
         const file = fileInput.files[0];
+        
         if (!text && !file) return;
+        
+        // Если есть файл, используем HTTP маршрут
         if (file) {
             const formData = new FormData();
             formData.append('content_enc', text);
             formData.append('file', file);
-            await fetch(window.location.href, {
-                method: 'POST',
-                body: formData
-            });
-            messageInput.value = '';
-            fileInput.value = '';
-            fileName.textContent = '';
-            messageInput.style.height = 'auto';
+            
+            try {
+                const response = await fetch(`/send_group_message/${inviteLink}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    messageInput.value = '';
+                    fileInput.value = '';
+                    fileName.textContent = '';
+                    messageInput.style.height = 'auto';
+                } else {
+                    console.error('Error sending message:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+            }
             return;
         }
-        // --- Шифруем текст перед отправкой ---
+        
+        // Для текстовых сообщений используем Socket.IO
         let encrypted = text;
         if (anonymousMode && currentKey) {
             encrypted = await encryptMessage(text, currentKey);
         }
+        
         socket.emit('send_group_message', {
             content: encrypted,
             group_id: groupId,
             sender_id: currentUserId
         });
+        
         messageInput.value = '';
         messageInput.style.height = 'auto';
     });

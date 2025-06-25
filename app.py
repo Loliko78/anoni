@@ -1652,6 +1652,155 @@ def delete_channel_post(post_id):
     flash('Пост удалён', 'success')
     return redirect(url_for('view_channel', channel_id=channel.id))
 
+@app.route('/send_message/<int:chat_id>', methods=['POST'])
+@login_required
+def send_message(chat_id):
+    """Отправка сообщения в личный чат"""
+    try:
+        # Находим чат
+        chat = db.session.get(Chat, chat_id)
+        if not chat:
+            return jsonify({'success': False, 'message': 'Чат не найден'}), 404
+        
+        # Проверяем, что текущий пользователь является участником чата
+        if chat.user1_id != current_user.id and chat.user2_id != current_user.id:
+            return jsonify({'success': False, 'message': 'Доступ запрещен'}), 403
+        
+        # Получаем данные
+        content = request.form.get('content_enc', '').strip()
+        file = request.files.get('file')
+        
+        if not content and not file:
+            return jsonify({'success': False, 'message': 'Сообщение не может быть пустым'}), 400
+        
+        # Обрабатываем файл, если он есть
+        file_url = None
+        if file and file.filename:
+            # Сохраняем файл
+            filename = secure_filename(file.filename)
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            unique_filename = f"chat_{chat_id}_{timestamp}_{filename}"
+            
+            # Создаем папку uploads если её нет
+            upload_folder = os.path.join(app.root_path, 'static', 'uploads')
+            os.makedirs(upload_folder, exist_ok=True)
+            
+            file_path = os.path.join(upload_folder, unique_filename)
+            file.save(file_path)
+            file_url = f"/static/uploads/{unique_filename}"
+            
+            # Добавляем информацию о файле к контенту
+            if content:
+                content += f" [file:{file_url}]"
+            else:
+                content = f"[file:{file_url}]"
+        
+        # Сохраняем сообщение в базе данных
+        new_message = Message(
+            chat_id=chat_id,
+            sender_id=current_user.id,
+            content_enc=content.encode('utf-8')
+        )
+        db.session.add(new_message)
+        db.session.commit()
+        
+        # Отправляем сообщение через Socket.IO
+        message_data = {
+            'id': new_message.id,
+            'chat_id': chat_id,
+            'sender_id': current_user.id,
+            'sender_nickname': current_user.encrypted_nickname,
+            'content': content,
+            'timestamp': new_message.timestamp.isoformat(),
+            'file_url': file_url
+        }
+        
+        # Отправляем в комнату чата
+        room = f'chat_{chat_id}'
+        socketio.emit('new_message', message_data, room=room)
+        
+        return jsonify({'success': True, 'message': 'Сообщение отправлено'})
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f'Error in send_message route: {e}')
+        return jsonify({'success': False, 'message': 'Ошибка отправки сообщения'}), 500
+
+@app.route('/send_group_message/<invite_link>', methods=['POST'])
+@login_required
+def send_group_message(invite_link):
+    """Отправка сообщения в групповой чат"""
+    try:
+        # Находим группу
+        group = Group.query.filter_by(invite_link_enc=invite_link.encode('utf-8')).first()
+        if not group:
+            return jsonify({'success': False, 'message': 'Группа не найдена'}), 404
+        
+        # Проверяем, что пользователь является участником группы
+        group_member = GroupMember.query.filter_by(group_id=group.id, user_id=current_user.id).first()
+        if not group_member:
+            return jsonify({'success': False, 'message': 'Вы не являетесь участником группы'}), 403
+        
+        # Получаем данные
+        content = request.form.get('content_enc', '').strip()
+        file = request.files.get('file')
+        
+        if not content and not file:
+            return jsonify({'success': False, 'message': 'Сообщение не может быть пустым'}), 400
+        
+        # Обрабатываем файл, если он есть
+        file_url = None
+        if file and file.filename:
+            # Сохраняем файл
+            filename = secure_filename(file.filename)
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            unique_filename = f"group_{group.id}_{timestamp}_{filename}"
+            
+            # Создаем папку uploads если её нет
+            upload_folder = os.path.join(app.root_path, 'static', 'uploads')
+            os.makedirs(upload_folder, exist_ok=True)
+            
+            file_path = os.path.join(upload_folder, unique_filename)
+            file.save(file_path)
+            file_url = f"/static/uploads/{unique_filename}"
+            
+            # Добавляем информацию о файле к контенту
+            if content:
+                content += f" [file:{file_url}]"
+            else:
+                content = f"[file:{file_url}]"
+        
+        # Сохраняем сообщение в базе данных
+        new_message = Message(
+            group_id=group.id,
+            sender_id=current_user.id,
+            content_enc=content.encode('utf-8')
+        )
+        db.session.add(new_message)
+        db.session.commit()
+        
+        # Отправляем сообщение через Socket.IO
+        message_data = {
+            'id': new_message.id,
+            'group_id': group.id,
+            'sender_id': current_user.id,
+            'sender_nickname': current_user.encrypted_nickname,
+            'content': content,
+            'timestamp': new_message.timestamp.isoformat(),
+            'file_url': file_url
+        }
+        
+        # Отправляем в комнату группы
+        room = f'group_{invite_link}'
+        socketio.emit('new_group_message', message_data, room=room)
+        
+        return jsonify({'success': True, 'message': 'Сообщение отправлено'})
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f'Error in send_group_message route: {e}')
+        return jsonify({'success': False, 'message': 'Ошибка отправки сообщения'}), 500
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
