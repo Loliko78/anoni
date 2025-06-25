@@ -268,15 +268,26 @@
 /* Адаптивность для мобильных устройств */
 @media (max-width: 768px) {
     .chat-container {
-        height: calc(100vh - 120px);
+        height: calc(100vh - 100px);
         max-height: 85vh;
         min-height: 380px;
     }
+    .chat-input-container {
+        padding: 12px 15px;
+    }
+    .chat-input-form {
+        gap: 8px;
+        align-items: center;
+    }
     .chat-send-btn {
-        font-size: 1.2em;
-        min-width: 100px;
-        height: 48px;
-        padding: 0 18px;
+        font-size: 1.3em;
+        min-width: 110px;
+        height: 52px;
+        padding: 0 20px;
+    }
+    .file-attach-label {
+        margin-left: 6px;
+        align-self: center;
     }
     .chat-header .key-info button {
         font-size: 0.8em;
@@ -288,37 +299,23 @@
 
 /* Дополнительная оптимизация для очень маленьких экранов */
 @media (max-width: 480px) {
-    .chat-input-form {
-        align-items: center !important;
-        gap: 8px !important;
+    .chat-container {
+        height: calc(100vh - 70px);
+        max-height: 75vh;
+        min-height: 260px;
+    }
+    .chat-input-container {
+        padding: 10px 12px;
     }
     .chat-send-btn {
-        font-size: 1.3em;
-        min-width: 120px;
-        height: 54px;
-        padding: 0 20px;
-        margin-bottom: 6px;
-        margin-top: 0;
-        border-radius: 18px;
+        font-size: 1.2em;
+        min-width: 100px;
+        height: 48px;
+        padding: 0 16px;
     }
     .file-attach-label {
-        align-items: center;
-        height: 54px;
-        margin-bottom: 0;
-        margin-top: 0;
-    }
-    .chat-input {
-        min-height: 54px;
-        font-size: 1.1em;
-        margin-bottom: 0;
-        margin-top: 0;
-    }
-    .chat-container {
-        padding-bottom: 10px;
-        padding-top: 10px;
-        height: calc(100vh - 120px);
-        max-height: 80vh;
-        min-height: 220px;
+        margin-left: 4px;
+        align-self: center;
     }
     .chat-header .key-info button {
         font-size: 0.7em;
@@ -389,4 +386,26 @@
 }
 .file-attach-label:hover {
     color: var(--accent-hover);
+}
+
+.close-btn {
+    color: var(--text-color);
+    font-size: 1.5em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--accent-color);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+.close-btn:hover {
+    color: var(--secondary-accent-color);
+    background: var(--accent-hover);
+    transform: scale(1.1);
 } 
