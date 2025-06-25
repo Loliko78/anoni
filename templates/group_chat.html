@@ -83,10 +83,15 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
                         id="messageInput" 
                         placeholder="Введите сообщение... (Enter для отправки, Shift+Enter для новой строки)" 
                         required
-                        rows="1"
+                        rows="2"
+                        style="min-height:48px;font-size:1.1em;"
                     ></textarea>
                 </div>
-                <input type="file" name="file" id="fileInput" accept="image/*,video/*" style="margin-left:10px;">
+                <input type="file" name="file" id="fileInput" accept="image/*,video/*" style="display:none;">
+                <label for="fileInput" class="file-attach-label" style="cursor:pointer;display:flex;align-items:center;margin-left:8px;">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-paperclip"><path d="M21.44 11.05l-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19"></path></svg>
+                    <span id="fileName" style="font-size:0.9em;margin-left:4px;color:#aaa;"></span>
+                </label>
                 <button type="submit" class="chat-send-btn">Отправить</button>
             </form>
         </div>
@@ -443,6 +448,7 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
     const messageInput = document.getElementById('messageInput');
     const fileInput = document.getElementById('fileInput');
     const messagesContainer = document.getElementById('messages');
+    const fileName = document.getElementById('fileName');
 
     messageForm.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -459,6 +465,7 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
             });
             messageInput.value = '';
             fileInput.value = '';
+            fileName.textContent = '';
             messageInput.style.height = 'auto';
             return;
         }
@@ -474,6 +481,14 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
         });
         messageInput.value = '';
         messageInput.style.height = 'auto';
+    });
+
+    fileInput.addEventListener('change', function() {
+        if (fileInput.files.length > 0) {
+            fileName.textContent = fileInput.files[0].name;
+        } else {
+            fileName.textContent = '';
+        }
     });
 
     // Получение новых сообщений (и своих тоже)

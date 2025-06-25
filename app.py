@@ -1632,4 +1632,9 @@ if __name__ == '__main__':
     
     # Получаем порт из переменной окружения или используем 10000 по умолчанию
     port = int(os.environ.get("PORT", 10000))
-    socketio.run(app, debug=False, host='0.0.0.0', port=port) 
+    try:
+        import eventlet
+        import eventlet.wsgi
+        socketio.run(app, debug=False, host='0.0.0.0', port=port)
+    except ImportError:
+        socketio.run(app, debug=False, host='0.0.0.0', port=port) 

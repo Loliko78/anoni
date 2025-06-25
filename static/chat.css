@@ -331,11 +331,8 @@
     }
     
     .chat-input {
-        min-height: 28px;
-        max-height: 80px;
-        padding: 6px 10px;
-        font-size: 12px;
-        border-radius: 14px;
+        min-height: 48px;
+        font-size: 1.1em;
     }
     
     .chat-send-btn {
@@ -399,11 +396,8 @@
     }
     
     .chat-input {
-        min-height: 24px;
-        max-height: 60px;
-        padding: 4px 8px;
-        font-size: 11px;
-        border-radius: 12px;
+        min-height: 44px;
+        font-size: 1em;
     }
     
     .chat-send-btn {
@@ -462,4 +456,18 @@
 }
 .message-content {
     position: relative;
+}
+
+.file-attach-label {
+    background: none;
+    border: none;
+    padding: 0 6px;
+    color: var(--main-accent-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+}
+.file-attach-label:hover {
+    color: var(--accent-hover);
 } 

@@ -335,8 +335,12 @@ input[type="radio"]:checked + .channel-avatar-choice-img {
                     </div>
                     {% endfor %}
                     <form method="POST" action="{{ url_for('add_channel_comment', post_id=post.id) }}" class="channel-comment-form" enctype="multipart/form-data">
-                        <input type="text" name="content" class="input-field" placeholder="Ваш комментарий..." required>
-                        <input type="file" name="file" accept="image/*,video/*">
+                        <input type="text" name="content" class="input-field" placeholder="Ваш комментарий..." required style="min-height:40px;font-size:1.1em;">
+                        <input type="file" name="file" id="fileInput{{ post.id }}" accept="image/*,video/*" style="display:none;">
+                        <label for="fileInput{{ post.id }}" class="file-attach-label" style="cursor:pointer;display:flex;align-items:center;margin-left:8px;">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-paperclip"><path d="M21.44 11.05l-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19"></path></svg>
+                            <span id="fileName{{ post.id }}" style="font-size:0.9em;margin-left:4px;color:#aaa;"></span>
+                        </label>
                         <button type="submit">Прокомментировать</button>
                     </form>
                 </div>
@@ -347,4 +351,17 @@ input[type="radio"]:checked + .channel-avatar-choice-img {
         </div>
     </div>
 </div>
+<script>
+document.querySelectorAll('.channel-comment-form').forEach(function(form) {
+    const fileInput = form.querySelector('input[type="file"]');
+    const fileName = form.querySelector('span[id^="fileName"]');
+    fileInput.addEventListener('change', function() {
+        if (fileInput.files.length > 0) {
+            fileName.textContent = fileInput.files[0].name;
+        } else {
+            fileName.textContent = '';
+        }
+    });
+});
+</script>
 {% endblock %} 

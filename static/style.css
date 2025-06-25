@@ -2578,4 +2578,30 @@ input[type="file"]::file-selector-button:hover {
 .file-download-link:hover {
     background: var(--main-accent-color);
     color: var(--bg-primary);
+}
+
+.file-attach-label {
+    background: none;
+    border: none;
+    padding: 0 6px;
+    color: var(--main-accent-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+}
+.file-attach-label:hover {
+    color: var(--accent-hover);
+}
+@media (max-width: 768px) {
+    .chat-input, input[type=text], .input-field {
+        min-height: 48px;
+        font-size: 1.1em;
+    }
+}
+@media (max-width: 480px) {
+    .chat-input, input[type=text], .input-field {
+        min-height: 44px;
+        font-size: 1em;
+    }
 } 
