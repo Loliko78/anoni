@@ -2,6 +2,7 @@ Flask
 Flask-Login
 Flask-WTF
 SQLAlchemy
+Flask-SQLAlchem
 cryptography
 Pillow
 Werkzeug
