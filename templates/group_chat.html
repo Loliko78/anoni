@@ -101,8 +101,10 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
 <!-- Modal для управления ключами -->
 <div id="keyModal" class="modal">
     <div class="modal-content">
-        <span class="close">&times;</span>
-        <h3>Управление ключами шифрования</h3>
+        <div class="modal-header">
+            <h3>Управление ключами</h3>
+            <button class="close-btn" onclick="closeKeyModal()" title="Закрыть">✕</button>
+        </div>
         <div class="key-management">
             <div class="key-section">
                 <h4>Текущий ключ:</h4>
@@ -125,8 +127,10 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
 {% if current_user.id == group.creator_id %}
 <div id="groupModal" class="modal">
     <div class="modal-content">
-        <span class="close">&times;</span>
-        <h3>Управление группой</h3>
+        <div class="modal-header">
+            <h3>Управление группой</h3>
+            <button class="close-btn" onclick="closeGroupModal()" title="Закрыть">✕</button>
+        </div>
         <form method="POST" action="{{ url_for('group_chat', invite_link=invite_link) }}" enctype="multipart/form-data" class="avatar-form">
             <label>Сменить аватарку группы:</label>
             <div class="avatar-choices">
@@ -320,11 +324,13 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
     {% endif %}
     
     // Закрытие модальных окон
-    document.querySelectorAll('.close').forEach(function(closeBtn) {
-        closeBtn.addEventListener('click', function() {
-            this.closest('.modal').style.display = 'none';
-        });
-    });
+    function closeKeyModal() {
+        document.getElementById('keyModal').style.display = 'none';
+    }
+    
+    function closeGroupModal() {
+        document.getElementById('groupModal').style.display = 'none';
+    }
     
     window.addEventListener('click', function(event) {
         if (event.target.classList.contains('modal')) {

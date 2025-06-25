@@ -93,8 +93,10 @@
 <!-- Modal для управления ключами -->
 <div id="keyModal" class="modal">
     <div class="modal-content">
-        <span class="close">&times;</span>
-        <h3>Управление ключами шифрования</h3>
+        <div class="modal-header">
+            <h3>Управление ключами</h3>
+            <button class="close-btn" onclick="closeKeyModal()" title="Закрыть">✕</button>
+        </div>
         <div class="key-management">
             <div class="key-section">
                 <h4>Текущий ключ:</h4>
@@ -232,9 +234,9 @@
     }
     
     // Закрытие модального окна
-    document.querySelector('.close').addEventListener('click', function() {
+    function closeKeyModal() {
         document.getElementById('keyModal').style.display = 'none';
-    });
+    }
     
     window.addEventListener('click', function(event) {
         const modal = document.getElementById('keyModal');

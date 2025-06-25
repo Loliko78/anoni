@@ -210,7 +210,7 @@ def index():
     channel_subs = ChannelSubscriber.query.filter_by(user_id=current_user.id).all()
     channel_list = []
     for sub in channel_subs:
-        channel = Channel.query.get(sub.channel_id)
+        channel = db.session.get(Channel, sub.channel_id)
         if channel and not channel.deleted:  # Проверяем, что канал существует и не удалён
             channel_list.append(channel)
     return render_template('chats.html', chat_list=chats_with_info, group_list=group_list, channel_list=channel_list)
@@ -223,7 +223,7 @@ def search():
         start_chat = request.form.get('start_chat')
         if start_chat:
             user_id = int(start_chat)
-            other_user = User.query.get(user_id)
+            other_user = db.session.get(User, user_id)
             if other_user and other_user.id != current_user.id and not other_user.banned:
                 # Проверяем, есть ли уже чат
                 chat = Chat.query.filter(
@@ -302,7 +302,7 @@ def search():
 @app.route('/chat/<int:chat_id>', methods=['GET', 'POST'])
 @login_required
 def chat(chat_id):
-    chat = Chat.query.get_or_404(chat_id)
+    chat = db.session.get(Chat, chat_id)
     if current_user.id not in [chat.user1_id, chat.user2_id]:
         abort(403)
 
@@ -316,7 +316,7 @@ def chat(chat_id):
     db.session.commit()
 
     other_user_id = chat.user2_id if current_user.id == chat.user1_id else chat.user1_id
-    other_user = User.query.get_or_404(other_user_id)
+    other_user = db.session.get(User, other_user_id)
 
     # E2EE: если ключа нет, генерируем и сохраняем
     if not chat.key_enc:
@@ -406,12 +406,12 @@ def download_file(file_id):
     file_record = File.query.get_or_404(file_id)
     # Проверяем доступ к файлу через сообщение
     if file_record.message.chat_id:
-        chat = Chat.query.get(file_record.message.chat_id)
+        chat = db.session.get(Chat, file_record.message.chat_id)
         if current_user.id not in [chat.user1_id, chat.user2_id]:
             flash('Нет доступа к этому файлу', 'danger')
             return redirect(url_for('index'))
     elif file_record.message.group_id:
-        group = Group.query.get(file_record.message.group_id)
+        group = db.session.get(Group, file_record.message.group_id)
         if not GroupMember.query.filter_by(group_id=group.id, user_id=current_user.id).first():
             flash('Нет доступа к этому файлу', 'danger')
             return redirect(url_for('index'))
@@ -432,12 +432,12 @@ def view_file(file_id):
     file_record = File.query.get_or_404(file_id)
     # Проверяем доступ к файлу через сообщение
     if file_record.message.chat_id:
-        chat = Chat.query.get(file_record.message.chat_id)
+        chat = db.session.get(Chat, file_record.message.chat_id)
         if current_user.id not in [chat.user1_id, chat.user2_id]:
             flash('Нет доступа к этому файлу', 'danger')
             return redirect(url_for('index'))
     elif file_record.message.group_id:
-        group = Group.query.get(file_record.message.group_id)
+        group = db.session.get(Group, file_record.message.group_id)
         if not GroupMember.query.filter_by(group_id=group.id, user_id=current_user.id).first():
             flash('Нет доступа к этому файлу', 'danger')
             return redirect(url_for('index'))
@@ -513,7 +513,7 @@ def admin_delete_chat(chat_id):
     if not current_user.is_admin or user_nick != admin_nick:
         flash('Доступ запрещён', 'danger')
         return redirect(url_for('index'))
-    chat = Chat.query.get_or_404(chat_id)
+    chat = db.session.get(Chat, chat_id)
     db.session.delete(chat)
     db.session.commit()
     flash('Чат удалён', 'success')
@@ -704,7 +704,7 @@ def admin_delete_group(group_id):
     if not current_user.is_admin or user_nick != admin_nick:
         flash('Доступ запрещён', 'danger')
         return redirect(url_for('index'))
-    group = Group.query.get_or_404(group_id)
+    group = db.session.get(Group, group_id)
     db.session.delete(group)
     db.session.commit()
     flash('Группа удалена', 'success')
@@ -730,7 +730,7 @@ def get_group_messages(invite_link):
 @app.route('/chat/<int:chat_id>/messages')
 @login_required
 def get_chat_messages(chat_id):
-    chat = Chat.query.get_or_404(chat_id)
+    chat = db.session.get(Chat, chat_id)
     # Check if user is participant in this chat
     if current_user.id not in [chat.user1_id, chat.user2_id]:
         return jsonify({"error": "Unauthorized"}), 403
@@ -748,7 +748,7 @@ def get_chat_messages(chat_id):
 @app.route('/group/delete/<int:group_id>', methods=['POST'])
 @login_required
 def delete_group(group_id):
-    group = Group.query.get_or_404(group_id)
+    group = db.session.get(Group, group_id)
     # Только если пользователь состоит в группе (или создатель, если нужно)
     gm = GroupMember.query.filter_by(group_id=group.id, user_id=current_user.id).first()
     if not gm:
@@ -953,7 +953,7 @@ def update_public_key():
 @login_required
 def sync_chat_keys(chat_id):
     """Синхронизация ключей в чате - установка одинакового ключа обоим пользователям"""
-    chat = Chat.query.get_or_404(chat_id)
+    chat = db.session.get(Chat, chat_id)
     if current_user.id not in [chat.user1_id, chat.user2_id]:
         flash('Нет доступа к этому чату', 'danger')
         return redirect(url_for('index'))
@@ -1062,7 +1062,7 @@ def get_unread_count():
     
     # Проверяем групповые чаты
     for group_member in user_groups:
-        group = Group.query.get(group_member.group_id)
+        group = db.session.get(Group, group_member.group_id)
         if group:
             last_read_time = group_member.last_read
             
@@ -1097,7 +1097,7 @@ def get_unread_count():
 @login_required
 def mark_chat_read(chat_id):
     """Отметить сообщения в чате как прочитанные"""
-    chat = Chat.query.get_or_404(chat_id)
+    chat = db.session.get(Chat, chat_id)
     if current_user.id not in [chat.user1_id, chat.user2_id]:
         return jsonify({'error': 'Нет доступа к этому чату'}), 403
     
@@ -1483,7 +1483,7 @@ def create_channel():
 @app.route('/channel/<int:channel_id>', methods=['GET', 'POST'])
 @login_required
 def view_channel(channel_id):
-    channel = Channel.query.get_or_404(channel_id)
+    channel = db.session.get(Channel, channel_id)
     # Смена аватарки (только для создателя)
     if request.method == 'POST' and channel.creator_id == current_user.id:
         avatar_choice = request.form.get('avatar_choice')
@@ -1505,14 +1505,14 @@ def view_channel(channel_id):
     for post in posts:
         post.comments = post.comments.order_by(ChannelComment.timestamp.asc()).all()
         for comment in post.comments:
-            comment.author = User.query.get(comment.author_id)
+            comment.author = db.session.get(User, comment.author_id)
     channel.posts = posts
     return render_template('channel.html', channel=channel)
 
 @app.route('/channel/<int:channel_id>/delete', methods=['POST'])
 @login_required
 def delete_channel(channel_id):
-    channel = Channel.query.get_or_404(channel_id)
+    channel = db.session.get(Channel, channel_id)
     if channel.creator_id != current_user.id:
         flash('Нет прав на удаление канала', 'danger')
         return redirect(url_for('view_channel', channel_id=channel.id))
@@ -1525,7 +1525,7 @@ def delete_channel(channel_id):
 @app.route('/channel/<int:channel_id>/post', methods=['POST'])
 @login_required
 def create_channel_post(channel_id):
-    channel = Channel.query.get_or_404(channel_id)
+    channel = db.session.get(Channel, channel_id)
     if channel.creator_id != current_user.id:
         flash('Только владелец может публиковать посты', 'danger')
         return redirect(url_for('view_channel', channel_id=channel_id))
@@ -1556,7 +1556,7 @@ def create_channel_post(channel_id):
 @app.route('/channel/<int:channel_id>/subscribe', methods=['POST'])
 @login_required
 def subscribe_channel(channel_id):
-    channel = Channel.query.get_or_404(channel_id)
+    channel = db.session.get(Channel, channel_id)
     if ChannelSubscriber.query.filter_by(channel_id=channel_id, user_id=current_user.id).first():
         flash('Вы уже подписаны', 'info')
     else:
@@ -1609,7 +1609,7 @@ def add_channel_comment(post_id):
 @login_required
 def delete_channel_post(post_id):
     post = ChannelPost.query.get_or_404(post_id)
-    channel = Channel.query.get_or_404(post.channel_id)
+    channel = db.session.get(Channel, post.channel_id)
     if current_user.id != post.author_id and current_user.id != channel.creator_id:
         flash('Нет прав на удаление поста', 'danger')
         return redirect(url_for('view_channel', channel_id=channel.id))
