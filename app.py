@@ -357,10 +357,12 @@ def chat(chat_id):
         # Отправляем сообщение через Socket.IO
         message_data = {
             'id': new_message.id,
-            'sender_id': new_message.sender_id,
-            'content_enc': message_content,
+            'chat_id': chat_id,
+            'sender_id': current_user.id,
+            'sender_nickname': current_user.nickname_enc,
+            'content': content,
             'timestamp': new_message.timestamp.isoformat(),
-            'deleted': new_message.deleted
+            'file_url': file_url
         }
         emit_new_message(f'chat_{chat_id}', message_data)
         return jsonify({'success': True})
@@ -634,10 +636,12 @@ def group_chat(invite_link):
         # Отправляем сообщение через Socket.IO
         message_data = {
             'id': new_message.id,
-            'sender_id': new_message.sender_id,
-            'content_enc': message_content,
+            'group_id': found.id,
+            'sender_id': current_user.id,
+            'sender_name': current_user.nickname_enc,
+            'content': content,
             'timestamp': new_message.timestamp.isoformat(),
-            'deleted': new_message.deleted
+            'file_url': file_url
         }
         emit_new_message(f'group_{invite_link}', message_data)
         return jsonify({'success': True})
@@ -1328,10 +1332,12 @@ def on_send_message(data):
         # Отправляем сообщение через Socket.IO
         message_data = {
             'id': new_message.id,
+            'chat_id': chat.id,
             'sender_id': sender_id,
-            'recipient_id': recipient_id,
+            'sender_nickname': current_user.nickname_enc,
             'content': content,
-            'timestamp': new_message.timestamp.isoformat()
+            'timestamp': new_message.timestamp.isoformat(),
+            'file_url': None
         }
         
         # Отправляем в комнату чата
@@ -1379,11 +1385,12 @@ def on_send_group_message(data):
         # Отправляем сообщение через Socket.IO
         message_data = {
             'id': new_message.id,
-            'group_id': group_id,
-            'sender_id': sender_id,
-            'sender_name': sender_name,
+            'group_id': group.id,
+            'sender_id': current_user.id,
+            'sender_name': current_user.nickname_enc,
             'content': content,
-            'timestamp': new_message.timestamp.isoformat()
+            'timestamp': new_message.timestamp.isoformat(),
+            'file_url': None
         }
         
         # Отправляем в комнату группы
@@ -1832,7 +1839,7 @@ def send_group_message(invite_link):
             'id': new_message.id,
             'group_id': group.id,
             'sender_id': current_user.id,
-            'sender_nickname': current_user.nickname_enc,
+            'sender_name': current_user.nickname_enc,
             'content': content,
             'timestamp': new_message.timestamp.isoformat(),
             'file_url': file_url

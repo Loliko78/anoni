@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Чат с {{ other_user.encrypted_nickname }}{% endblock %}
+{% block title %}Чат с {{ other_user.nickname_enc }}{% endblock %}
 
 {% block content %}
 <style>
@@ -33,7 +33,7 @@
             <div class="chat-header-avatar">
                 <img src="{{ url_for('static', filename=other_user.avatar or 'avatars/cybermask.svg') }}" alt="avatar" class="chat-header-avatar-img">
             </div>
-            <h2>Чат с {{ other_user.encrypted_nickname }}</h2>
+            <h2>Чат с {{ other_user.nickname_enc }}</h2>
             <div class="key-info">
                 <button onclick="showKeyModal()">Управление ключами</button>
                 <a href="{{ url_for('index') }}" class="btn btn-secondary">Назад</a>
@@ -172,16 +172,57 @@
     });
 
     // Получение нового сообщения
-    socket.on('new_message', function(data) {
+    socket.on('new_message', async function(data) {
+        console.log('Received new message:', data);
         if (data.chat_id == chatId) {
+            // Расшифровываем сообщение если есть ключ
+            let decryptedContent = data.content;
+            if (currentKey) {
+                try {
+                    decryptedContent = await decryptMessage(data.content, currentKey);
+                } catch (error) {
+                    console.error('Ошибка расшифровки:', error);
+                    decryptedContent = '[ошибка расшифровки]';
+                }
+            }
+            
+            // Определяем, кто отправил сообщение
+            const isOwnMessage = data.sender_id === currentUserId;
+            console.log('Message sender_id:', data.sender_id, 'currentUserId:', currentUserId, 'isOwnMessage:', isOwnMessage);
+            
             const messageDiv = document.createElement('div');
-            messageDiv.className = 'message';
+            messageDiv.className = isOwnMessage ? 'message sent' : 'message received';
+            
+            // Обрабатываем файлы в сообщении
+            let fileHtml = '';
+            if (decryptedContent.includes('[file:')) {
+                const fileUrl = decryptedContent.split('[file:')[1].split(']')[0];
+                const textContent = decryptedContent.split(' [file:')[0];
+                
+                if (fileUrl.match(/\.(png|jpg|jpeg|gif|webp)$/i)) {
+                    fileHtml = `<img src="${fileUrl}" style="max-width:180px;max-height:180px;margin-top:8px;border-radius:8px;">`;
+                } else if (fileUrl.match(/\.(mp4|mov|avi)$/i)) {
+                    fileHtml = `<video src="${fileUrl}" controls style="max-width:220px;max-height:180px;margin-top:8px;border-radius:8px;"></video>`;
+                } else if (fileUrl.match(/\.(mp3|wav)$/i)) {
+                    fileHtml = `<audio src="${fileUrl}" controls style="margin-top:8px;"></audio>`;
+                } else {
+                    fileHtml = `<div style="margin-top:8px;"><a href="${fileUrl}" target="_blank" class="file-download-link">📎 Скачать файл</a></div>`;
+                }
+                
+                decryptedContent = textContent;
+            }
+            
+            const now = new Date();
+            const timeString = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+            
             messageDiv.innerHTML = `
                 <div class="message-content">
-                    <strong>${data.sender_nickname}:</strong> ${data.content}
-                    ${data.file_url ? `<br><img src="${data.file_url}" style="max-width:200px;max-height:200px;">` : ''}
+                    <span class="message-text">${decryptedContent}</span>
+                    ${fileHtml}
+                    <span class="message-time">${timeString}</span>
                 </div>
             `;
+            
             chatContainer.appendChild(messageDiv);
             scrollToBottom();
         }

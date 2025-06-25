@@ -51,7 +51,7 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
             {% for message in messages %}
             <div class="message {% if message.sender_id == current_user.id %}sent{% else %}received{% endif %}">
                 <div class="message-content">
-                    <span class="message-sender">{{ message.sender.encrypted_nickname }}</span>
+                    <span class="message-sender">{{ message.sender.nickname_enc }}</span>
                     <span class="message-text">{{ message.content.split(' [file:')[0] }}</span>
                     {% if '[file:' in message.content %}
                         {% set file_url = message.content.split('[file:')[1].split(']')[0] %}
@@ -154,7 +154,7 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
                     {% for member in group.members %}
                     <div class="member-item">
                         <img src="{{ url_for('static', filename=member.avatar or 'avatars/cybermask.svg') }}" class="chat-avatar-img" style="width:32px;height:32px;">
-                        <span>{{ member.encrypted_nickname }}</span>
+                        <span>{{ member.nickname_enc }}</span>
                         {% if member.id != group.creator_id %}
                         <button onclick="removeMember({{ member.id }})" class="btn btn-danger">Удалить</button>
                         {% endif %}
@@ -515,19 +515,43 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
 
     // Получение новых сообщений (и своих тоже)
     socket.on('new_group_message', async function(data) {
+        console.log('Received new group message:', data);
         if (data.group_id === groupId) {
             let decryptedText = data.content;
             if (anonymousMode && currentKey) {
                 decryptedText = await decryptMessage(data.content, currentKey);
             }
+            
+            // Обрабатываем файлы в сообщении
+            let fileHtml = '';
+            if (decryptedText.includes('[file:')) {
+                const fileUrl = decryptedText.split('[file:')[1].split(']')[0];
+                const textContent = decryptedText.split(' [file:')[0];
+                
+                if (fileUrl.match(/\.(png|jpg|jpeg|gif|webp)$/i)) {
+                    fileHtml = `<img src="${fileUrl}" style="max-width:180px;max-height:180px;margin-top:8px;border-radius:8px;">`;
+                } else if (fileUrl.match(/\.(mp4|mov|avi)$/i)) {
+                    fileHtml = `<video src="${fileUrl}" controls style="max-width:220px;max-height:180px;margin-top:8px;border-radius:8px;"></video>`;
+                } else if (fileUrl.match(/\.(mp3|wav)$/i)) {
+                    fileHtml = `<audio src="${fileUrl}" controls style="margin-top:8px;"></audio>`;
+                } else {
+                    fileHtml = `<div style="margin-top:8px;"><a href="${fileUrl}" target="_blank" class="file-download-link">📎 Скачать файл</a></div>`;
+                }
+                
+                decryptedText = textContent;
+            }
+            
             const messageDiv = document.createElement('div');
-            messageDiv.className = data.sender_id === currentUserId ? 'message sent' : 'message received';
+            const isOwnMessage = data.sender_id === currentUserId;
+            console.log('Group message sender_id:', data.sender_id, 'currentUserId:', currentUserId, 'isOwnMessage:', isOwnMessage);
+            messageDiv.className = isOwnMessage ? 'message sent' : 'message received';
             const now = new Date();
             const timeString = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
             messageDiv.innerHTML = `
                 <div class="message-content">
                     <span class="message-sender">${data.sender_name}</span>
                     <span class="message-text">${decryptedText}</span>
+                    ${fileHtml}
                     <span class="message-time">${timeString}</span>
                 </div>
             `;
