@@ -268,26 +268,15 @@
 /* Адаптивность для мобильных устройств */
 @media (max-width: 768px) {
     .chat-container {
-        height: calc(100vh - 100px);
+        height: calc(100vh - 120px);
         max-height: 85vh;
         min-height: 380px;
     }
-    .chat-input-container {
-        padding: 12px 15px;
-    }
-    .chat-input-form {
-        gap: 8px;
-        align-items: center;
-    }
     .chat-send-btn {
-        font-size: 1.3em;
-        min-width: 110px;
-        height: 52px;
-        padding: 0 20px;
-    }
-    .file-attach-label {
-        margin-left: 6px;
-        align-self: center;
+        font-size: 1.2em;
+        min-width: 100px;
+        height: 48px;
+        padding: 0 18px;
     }
     .chat-header .key-info button {
         font-size: 0.8em;
@@ -300,22 +289,15 @@
 /* Дополнительная оптимизация для очень маленьких экранов */
 @media (max-width: 480px) {
     .chat-container {
-        height: calc(100vh - 70px);
+        height: calc(100vh - 80px);
         max-height: 75vh;
         min-height: 260px;
     }
-    .chat-input-container {
-        padding: 10px 12px;
-    }
     .chat-send-btn {
-        font-size: 1.2em;
-        min-width: 100px;
-        height: 48px;
-        padding: 0 16px;
-    }
-    .file-attach-label {
-        margin-left: 4px;
-        align-self: center;
+        font-size: 1.1em;
+        min-width: 90px;
+        height: 40px;
+        padding: 0 12px;
     }
     .chat-header .key-info button {
         font-size: 0.7em;
@@ -386,26 +368,4 @@
 }
 .file-attach-label:hover {
     color: var(--accent-hover);
-}
-
-.close-btn {
-    color: var(--text-color);
-    font-size: 1.5em;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background: var(--accent-color);
-    border: 1px solid var(--border-color);
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-}
-.close-btn:hover {
-    color: var(--secondary-accent-color);
-    background: var(--accent-hover);
-    transform: scale(1.1);
 } 
