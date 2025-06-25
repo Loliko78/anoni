@@ -1,7 +1,6 @@
 #lt --port 10000 --subdomain harvestano - запуск сайта через LocalTunnel
 
 from flask import Flask, render_template, redirect, url_for, flash, request, send_file, jsonify, session, abort
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import os

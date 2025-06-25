@@ -10,4 +10,6 @@ python-socketio
 gunicorn
 eventlet
 requests
-pathlib 
+pathlib
+piexif
+wtforms
