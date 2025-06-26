@@ -90,7 +90,7 @@
     <form method="POST" action="{{ url_for('create_channel_post', channel_id=channel.id) }}" class="channel-post-form" enctype="multipart/form-data">
         <textarea name="content" class="input-field" placeholder="Напишите пост..." required style="min-height:80px;width:100%;resize:vertical;"></textarea>
         <input type="file" name="file" id="fileInputPost" accept="image/*,video/*" style="display:none;">
-        <label for="fileInputPost" class="file-attach-label" style="cursor:pointer;display:flex;align-items:center;margin-left:8px;">
+        <label for="fileInputPost" class="file-attach-label" id="fileAttachLabelPost" style="cursor:pointer;display:flex;align-items:center;margin-left:8px;">
             <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-paperclip">
                 <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
             </svg>
@@ -158,9 +158,8 @@
                 <form method="POST" action="{{ url_for('add_channel_comment', post_id=post.id) }}" class="channel-comment-form" enctype="multipart/form-data">
                     <input type="text" name="content" class="input-field" placeholder="Ваш комментарий..." required style="min-height:40px;font-size:1.1em;">
                     <input type="file" name="file" id="fileInput{{ post.id }}" accept="image/*,video/*" style="display:none;">
-                    <label for="fileInput{{ post.id }}" class="file-attach-label" style="cursor:pointer;display:flex;align-items:center;margin-left:8px;">
+                    <label for="fileInput{{ post.id }}" class="file-attach-label" id="fileAttachLabel{{ post.id }}" style="cursor:pointer;display:flex;align-items:center;margin-left:8px;">
                         <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-paperclip"><path d="M21.44 11.05l-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19"></path></svg>
-                        <span id="fileName{{ post.id }}" style="font-size:0.9em;margin-left:4px;color:#aaa;"></span>
                     </label>
                     <button type="submit" class="comment-btn">Прокомментировать</button>
                 </form>
@@ -172,21 +171,24 @@
     </div>
 </div>
 <script>
+document.getElementById('fileInputPost').addEventListener('change', function() {
+    const label = document.getElementById('fileAttachLabelPost');
+    if (this.files.length > 0) {
+        label.classList.add('selected');
+    } else {
+        label.classList.remove('selected');
+    }
+});
 document.querySelectorAll('.channel-comment-form').forEach(function(form) {
     const fileInput = form.querySelector('input[type="file"]');
-    const fileName = form.querySelector('span[id^="fileName"]');
+    const label = form.querySelector('.file-attach-label');
     fileInput.addEventListener('change', function() {
         if (fileInput.files.length > 0) {
-            fileName.textContent = fileInput.files[0].name;
+            label.classList.add('selected');
         } else {
-            fileName.textContent = '';
+            label.classList.remove('selected');
         }
     });
-});
-
-document.getElementById('fileInputPost').addEventListener('change', function() {
-    const fileName = this.files[0] ? this.files[0].name : '';
-    document.getElementById('fileNamePost').textContent = fileName;
 });
 </script>
 {% endblock %} 
