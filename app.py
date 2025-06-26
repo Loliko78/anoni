@@ -2029,6 +2029,45 @@ def group_key_management(invite_link):
                          current_key=current_key,
                          back_url=back_url)
 
+@app.route('/channel/<int:channel_id>/settings', methods=['GET', 'POST'])
+@login_required
+def channel_settings(channel_id):
+    from models import Channel, ChannelSubscriber, User
+    channel = Channel.query.get_or_404(channel_id)
+    if channel.creator_id != current_user.id:
+        flash('Только владелец может настраивать канал', 'danger')
+        return redirect(url_for('view_channel', channel_id=channel_id))
+
+    # Обработка POST: смена названия, аватара, кик участника
+    if request.method == 'POST':
+        if 'new_name' in request.form:
+            new_name = request.form.get('new_name', '').strip()
+            if new_name:
+                channel.name = new_name
+                db.session.commit()
+                flash('Название канала обновлено', 'success')
+        if 'avatar_upload' in request.files:
+            avatar_upload = request.files['avatar_upload']
+            if avatar_upload and avatar_upload.filename:
+                filename = secure_filename(avatar_upload.filename)
+                avatar_path = os.path.join(app.config['UPLOAD_FOLDER'], f'channel_{channel.id}_{filename}')
+                avatar_upload.save(avatar_path)
+                channel.avatar = f'uploads/{os.path.basename(avatar_path)}'
+                db.session.commit()
+                flash('Аватарка обновлена', 'success')
+        if 'kick_user_id' in request.form:
+            user_id = int(request.form.get('kick_user_id'))
+            sub = ChannelSubscriber.query.filter_by(channel_id=channel.id, user_id=user_id).first()
+            if sub:
+                db.session.delete(sub)
+                db.session.commit()
+                flash('Участник исключён', 'success')
+
+    # Получаем участников
+    subs = ChannelSubscriber.query.filter_by(channel_id=channel.id).all()
+    members = [db.session.get(User, s.user_id) for s in subs]
+    return render_template('channel_settings.html', channel=channel, members=members)
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
