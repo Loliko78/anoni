@@ -76,6 +76,7 @@
     </div>
     <div class="channel-hero-info">
         <div class="channel-hero-title">{{ channel.name }}</div>
+        <div class="channel-hero-desc">{{ channel.description }}</div>
         {% if current_user.id == channel.creator_id %}
         <div class="channel-hero-actions">
             <a href="{{ url_for('channel_settings', channel_id=channel.id) }}" class="channel-btn">Настроить канал</a>
@@ -83,4 +84,109 @@
         {% endif %}
     </div>
 </div>
+<div class="channel-posts-section">
+    <h3 style="color:var(--main-accent-color);font-size:1.4em;letter-spacing:1px;">Посты канала</h3>
+    {% if current_user.id == channel.creator_id %}
+    <form method="POST" action="{{ url_for('create_channel_post', channel_id=channel.id) }}" class="channel-post-form" enctype="multipart/form-data">
+        <textarea name="content" class="input-field" placeholder="Напишите пост..." required style="min-height:80px;width:100%;resize:vertical;"></textarea>
+        <input type="file" name="file" id="fileInputPost" accept="image/*,video/*" style="display:none;">
+        <label for="fileInputPost" class="file-attach-label" style="cursor:pointer;display:flex;align-items:center;margin-left:8px;">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-paperclip">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+            </svg>
+        </label>
+        <span id="fileNamePost" style="margin-left:8px;font-size:0.9em;color:var(--text-secondary);"></span>
+        <button type="submit" class="btn btn-primary">Опубликовать</button>
+    </form>
+    {% endif %}
+    <div class="channel-posts-list">
+        {% for post in channel.posts|reverse %}
+        <div class="channel-post-card">
+            <div class="channel-post-header">
+                <span class="channel-post-author">Пост от владельца</span>
+                <span class="channel-post-time">{{ post.timestamp.strftime('%d.%m.%Y %H:%M') }}</span>
+                {% if current_user.id == post.author_id or current_user.id == channel.creator_id %}
+                <form method="POST" action="{{ url_for('delete_channel_post', post_id=post.id) }}" style="display:inline;" onsubmit="return confirm('Удалить пост безвозвратно?');">
+                    <button type="submit" class="channel-btn channel-btn-danger" style="margin-left:1em;">Удалить пост</button>
+                </form>
+                {% endif %}
+            </div>
+            <div class="channel-post-content">
+                {{ post.content.split(' [file:')[0] }}
+                {% if '[file:' in post.content %}
+                    {% set file_url = post.content.split('[file:')[1].split(']')[0] %}
+                    <div class="channel-post-media">
+                    {% if file_url.endswith('.png') or file_url.endswith('.jpg') or file_url.endswith('.jpeg') or file_url.endswith('.gif') or file_url.endswith('.webp') %}
+                        <img src="{{ file_url }}" style="max-width:220px;max-height:220px;margin-top:8px;border-radius:10px;box-shadow:0 2px 12px var(--main-accent-color);">
+                    {% elif file_url.endswith('.mp4') or file_url.endswith('.mov') or file_url.endswith('.avi') %}
+                        <video src="{{ file_url }}" controls style="max-width:320px;max-height:220px;margin-top:8px;border-radius:10px;box-shadow:0 2px 12px var(--main-accent-color);"></video>
+                    {% elif file_url.endswith('.mp3') or file_url.endswith('.wav') %}
+                        <audio src="{{ file_url }}" controls style="margin-top:8px;"></audio>
+                    {% else %}
+                        <div style="margin-top:8px;">
+                            <a href="{{ file_url }}" target="_blank" class="file-download-link channel-btn" style="padding:0.3em 1em;font-size:0.95em;">📎 Скачать файл</a>
+                        </div>
+                    {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="channel-comments-section">
+                <div style="font-weight:bold;color:var(--main-accent-color);margin-bottom:0.5em;">Комментарии</div>
+                {% for comment in post.comments %}
+                <div class="channel-comment">
+                    <span class="channel-comment-author">{{ comment.author.nickname_enc if comment.author else 'Unknown' }}</span>
+                    <span class="channel-comment-time">{{ comment.timestamp.strftime('%d.%m.%Y %H:%M') }}</span>
+                    <div class="channel-comment-content">{{ comment.content.split(' [file:')[0] }}</div>
+                    {% if '[file:' in comment.content %}
+                        {% set file_url = comment.content.split('[file:')[1].split(']')[0] %}
+                        <div class="channel-post-media">
+                        {% if file_url.endswith('.png') or file_url.endswith('.jpg') or file_url.endswith('.jpeg') or file_url.endswith('.gif') or file_url.endswith('.webp') %}
+                            <img src="{{ file_url }}" style="max-width:120px;max-height:120px;margin-top:8px;border-radius:8px;box-shadow:0 2px 8px var(--main-accent-color);">
+                        {% elif file_url.endswith('.mp4') or file_url.endswith('.mov') or file_url.endswith('.avi') %}
+                            <video src="{{ file_url }}" controls style="max-width:180px;max-height:120px;margin-top:8px;border-radius:8px;box-shadow:0 2px 8px var(--main-accent-color);"></video>
+                        {% elif file_url.endswith('.mp3') or file_url.endswith('.wav') %}
+                            <audio src="{{ file_url }}" controls style="margin-top:8px;"></audio>
+                        {% else %}
+                            <div style="margin-top:8px;">
+                                <a href="{{ file_url }}" target="_blank" class="file-download-link channel-btn" style="padding:0.2em 0.7em;font-size:0.9em;">📎 Скачать файл</a>
+                            </div>
+                        {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                <form method="POST" action="{{ url_for('add_channel_comment', post_id=post.id) }}" class="channel-comment-form" enctype="multipart/form-data">
+                    <input type="text" name="content" class="input-field" placeholder="Ваш комментарий..." required style="min-height:40px;font-size:1.1em;">
+                    <input type="file" name="file" id="fileInput{{ post.id }}" accept="image/*,video/*" style="display:none;">
+                    <label for="fileInput{{ post.id }}" class="file-attach-label" style="cursor:pointer;display:flex;align-items:center;margin-left:8px;">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-paperclip"><path d="M21.44 11.05l-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19"></path></svg>
+                        <span id="fileName{{ post.id }}" style="font-size:0.9em;margin-left:4px;color:#aaa;"></span>
+                    </label>
+                    <button type="submit">Прокомментировать</button>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <div style="color:#888;font-size:1.1em;text-align:center;">Постов пока нет.</div>
+        {% endfor %}
+    </div>
+</div>
+<script>
+document.querySelectorAll('.channel-comment-form').forEach(function(form) {
+    const fileInput = form.querySelector('input[type="file"]');
+    const fileName = form.querySelector('span[id^="fileName"]');
+    fileInput.addEventListener('change', function() {
+        if (fileInput.files.length > 0) {
+            fileName.textContent = fileInput.files[0].name;
+        } else {
+            fileName.textContent = '';
+        }
+    });
+});
+
+document.getElementById('fileInputPost').addEventListener('change', function() {
+    const fileName = this.files[0] ? this.files[0].name : '';
+    document.getElementById('fileNamePost').textContent = fileName;
+});
+</script>
 {% endblock %} 
