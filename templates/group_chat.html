@@ -100,87 +100,6 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 
-<!-- Modal для управления ключами -->
-<div id="keyModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Управление ключами</h3>
-            <button class="close-btn" onclick="closeKeyModal()" title="Закрыть">✕</button>
-        </div>
-        <div class="key-management">
-            <div class="key-section">
-                <h4>Текущий ключ:</h4>
-                <div class="current-key" id="currentKey">Не установлен</div>
-            </div>
-            <div class="key-section">
-                <h4>Установить новый ключ:</h4>
-                <input type="text" id="newKey" placeholder="Введите ключ шифрования" class="form-control">
-                <button onclick="setKey()" class="btn btn-primary">Установить ключ</button>
-            </div>
-            <div class="key-section">
-                <h4>Генерация ключа:</h4>
-                <button onclick="generateKey()" class="btn btn-secondary">Сгенерировать новый ключ</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal для управления группой -->
-{% if current_user.id == group.creator_id %}
-<div id="groupModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Управление группой</h3>
-            <button class="close-btn" onclick="closeGroupModal()" title="Закрыть">✕</button>
-        </div>
-        <form method="POST" action="{{ url_for('group_chat', invite_link=invite_link) }}" enctype="multipart/form-data" class="avatar-form">
-            <label>Сменить аватарку группы:</label>
-            <div class="avatar-choices">
-                {% for icon in ['cybermask.svg', 'skull.svg', 'eye.svg', 'terminal.svg', 'hacker.svg'] %}
-                <label>
-                    <input type="radio" name="avatar_choice" value="avatars/{{ icon }}" {% if group.avatar == 'avatars/' + icon %}checked{% endif %}>
-                    <img src="{{ url_for('static', filename='avatars/' + icon) }}" class="avatar-choice-img" alt="std-avatar">
-                </label>
-                {% endfor %}
-                <label>
-                    <input type="file" name="avatar_upload" accept="image/*">
-                    <span class="avatar-upload-label">Загрузить...</span>
-                </label>
-            </div>
-            <button type="submit" class="btn">Сохранить аватарку</button>
-        </form>
-        <div class="group-management">
-            <div class="group-section">
-                <h4>Участники группы:</h4>
-                <div class="members-list">
-                    {% for member in group.members %}
-                    <div class="member-item">
-                        <img src="{{ url_for('static', filename=member.avatar or 'avatars/cybermask.svg') }}" class="chat-avatar-img" style="width:32px;height:32px;">
-                        <span>{{ member.nickname_enc }}</span>
-                        {% if member.id != group.creator_id %}
-                        <button onclick="removeMember({{ member.id }})" class="btn btn-danger">Удалить</button>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            <div class="group-section">
-                <h4>Добавить участника по нику:</h4>
-                <input type="text" id="newMemberNickname" placeholder="Введите ник пользователя" class="form-control">
-                <button onclick="addMemberByNickname()" class="btn btn-primary">Добавить по нику</button>
-            </div>
-            <div class="group-section">
-                <h4>Пригласительная ссылка:</h4>
-                <div class="invite-link-container">
-                    <input type="text" id="inviteLink" value="{{ request.url_root }}group/join/{{ invite_link }}" readonly class="form-control">
-                    <button onclick="copyInviteLink()" class="btn btn-secondary">Копировать ссылку</button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-
 <script>
     const socket = io();
     const currentUserId = {{ current_user.id }};
@@ -188,6 +107,12 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
     const inviteLink = '{{ invite_link }}';
     let currentKey = localStorage.getItem('group_key_' + groupId) || null;
     const anonymousMode = {{ 'true' if anonymous_mode else 'false' }};
+    
+    // Устанавливаем глобальные переменные для модальных окон
+    window.currentOtherUserId = null;
+    window.currentGroupId = groupId;
+    window.currentInviteLink = inviteLink;
+    window.currentGroupCreatorId = {{ group.creator_id }};
     
     // Присоединяемся к комнате группы
     socket.emit('join_group', {

@@ -54,234 +54,248 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(8px);
-            display: flex;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 999999;
+            display: none;
             justify-content: center;
             align-items: center;
-            z-index: 10000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: fadeIn 0.3s ease;
         }
 
         .modal-overlay.show {
-            opacity: 1;
-            visibility: visible;
+            display: flex;
         }
 
         .modal {
-            background: linear-gradient(135deg, #1a1a1e 0%, #2a2a2e 100%);
-            border: 2px solid var(--main-accent-color);
-            border-radius: 16px;
-            padding: 32px;
-            max-width: 500px;
+            background: var(--background-color);
+            border: 1px solid var(--main-accent-color);
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+            border-radius: 10px;
+            padding: 25px;
             width: 90%;
-            box-shadow: 
-                0 0 40px rgba(0, 255, 65, 0.4),
-                0 20px 60px rgba(0, 0, 0, 0.8),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            transform: scale(0.8) translateY(20px);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
             position: relative;
-            overflow: hidden;
-        }
-
-        .modal::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--main-accent-color), transparent);
-            animation: scanline 2s linear infinite;
-        }
-
-        @keyframes scanline {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-
-        .modal-overlay.show .modal {
-            transform: scale(1) translateY(0);
+            animation: modalSlideIn 0.3s ease;
         }
 
         .modal-title {
             color: var(--main-accent-color);
             font-size: 1.8em;
             margin-bottom: 20px;
-            text-align: center;
-            font-weight: bold;
-            text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
-            letter-spacing: 1px;
-            position: relative;
-        }
-
-        .modal-title::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60px;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--main-accent-color), transparent);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
         }
 
         .modal-message {
-            color: var(--text-color);
-            margin-bottom: 24px;
-            text-align: center;
+            color: var(--text-primary);
+            margin-bottom: 20px;
             line-height: 1.6;
-            font-size: 1.1em;
-            padding: 0 10px;
         }
 
         .modal-input {
             width: 100%;
-            padding: 16px 20px;
-            margin-bottom: 24px;
-            background: rgba(35, 35, 43, 0.8);
-            border: 2px solid var(--border-color);
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
             color: var(--text-color);
-            border-radius: 12px;
-            font-family: inherit;
-            font-size: 1.1em;
-            transition: all 0.3s ease;
+            padding: 12px;
+            font-family: var(--font-main);
+            font-size: 1em;
+            border-radius: 5px;
+            margin-bottom: 20px;
             box-sizing: border-box;
         }
 
         .modal-input:focus {
             outline: none;
             border-color: var(--main-accent-color);
-            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
-            background: rgba(35, 35, 43, 0.9);
-        }
-
-        .modal-input::placeholder {
-            color: rgba(176, 176, 195, 0.6);
+            box-shadow: 0 0 10px var(--main-accent-color);
         }
 
         .modal-buttons {
             display: flex;
-            gap: 16px;
-            justify-content: center;
+            gap: 10px;
+            justify-content: flex-end;
             flex-wrap: wrap;
         }
 
         .modal-btn {
-            padding: 14px 28px;
-            border: 2px solid var(--border-color);
-            background: linear-gradient(135deg, #2a2a2e 0%, #1a1a1e 100%);
-            color: var(--text-color);
+            background: var(--main-accent-color);
+            color: var(--background-color);
+            border: none;
+            padding: 10px 20px;
+            font-family: var(--font-main);
+            font-size: 1em;
             cursor: pointer;
-            border-radius: 12px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            min-width: 120px;
-            font-size: 1.1em;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .modal-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            transition: left 0.5s;
-        }
-
-        .modal-btn:hover::before {
-            left: 100%;
+            transition: all 0.3s;
+            border-radius: 5px;
         }
 
         .modal-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            background: var(--secondary-accent-color);
+            box-shadow: 0 0 10px var(--main-accent-color);
         }
 
         .modal-btn.primary {
-            background: linear-gradient(135deg, var(--main-accent-color) 0%, #00cc52 100%);
-            color: #000;
-            border-color: var(--main-accent-color);
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            background: var(--main-accent-color);
         }
 
-        .modal-btn.primary:hover {
-            background: linear-gradient(135deg, #00cc52 0%, var(--main-accent-color) 100%);
-            box-shadow: 0 8px 25px rgba(0, 255, 65, 0.4);
+        /* Key Management Modal Styles */
+        .key-management-modal .key-section {
+            margin-bottom: 20px;
         }
 
-        .modal-btn.danger {
-            background: linear-gradient(135deg, #ef7a7a 0%, #e05a5a 100%);
-            color: #000;
-            border-color: #ef7a7a;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        .key-management-modal .key-section h4 {
+            color: var(--main-accent-color);
+            border-bottom: 1px dashed var(--border-color);
+            padding-bottom: 5px;
+            margin-bottom: 10px;
         }
 
-        .modal-btn.danger:hover {
-            background: linear-gradient(135deg, #e05a5a 0%, #ef7a7a 100%);
-            box-shadow: 0 8px 25px rgba(239, 122, 122, 0.4);
+        .key-management-modal .current-key {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 5px;
+            color: var(--text-secondary);
+            font-family: monospace;
+            word-break: break-all;
         }
 
-        /* Адаптивность для мобильных устройств */
+        .key-management-modal .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .key-management-modal .btn {
+            background: var(--main-accent-color);
+            color: var(--background-color);
+            border: none;
+            padding: 8px 15px;
+            font-family: var(--font-main);
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 5px;
+        }
+
+        .key-management-modal .btn:hover {
+            background: var(--secondary-accent-color);
+            box-shadow: 0 0 10px var(--main-accent-color);
+        }
+
+        .key-management-modal .btn.btn-primary {
+            background: var(--main-accent-color);
+        }
+
+        .key-management-modal .btn.btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        /* Group Management Modal Styles */
+        .group-management-modal .group-section {
+            margin-bottom: 20px;
+        }
+
+        .group-management-modal .group-section h4 {
+            color: var(--main-accent-color);
+            border-bottom: 1px dashed var(--border-color);
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        .group-management-modal .members-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 10px;
+            background: var(--bg-secondary);
+        }
+
+        .group-management-modal .member-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .group-management-modal .member-item:last-child {
+            border-bottom: none;
+        }
+
+        .group-management-modal .member-item img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--bg-primary);
+        }
+
+        .group-management-modal .invite-link-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .group-management-modal .invite-link-container input {
+            flex: 1;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px;
+            font-family: var(--font-main);
+            font-size: 0.9em;
+            border-radius: 5px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes modalSlideIn {
+            from { 
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         @media (max-width: 768px) {
             .modal {
-                max-width: 90%;
-                padding: 24px;
-                margin: 20px;
-            }
-            
-            .modal-title {
-                font-size: 1.5em;
-            }
-            
-            .modal-message {
-                font-size: 1em;
-            }
-            
-            .modal-input {
-                padding: 14px 16px;
-                font-size: 1em;
-            }
-            
-            .modal-btn {
-                padding: 12px 24px;
-                min-width: 100px;
-                font-size: 1em;
+                width: 95%;
+                margin: 5% auto;
+                padding: 20px;
             }
             
             .modal-buttons {
-                gap: 12px;
+                flex-direction: column;
+            }
+            
+            .modal-btn {
+                width: 100%;
             }
         }
 
         @media (max-width: 480px) {
             .modal {
-                max-width: 95%;
-                padding: 20px;
-                margin: 10px;
+                width: 98%;
+                margin: 2% auto;
+                padding: 15px;
             }
             
             .modal-title {
-                font-size: 1.3em;
-            }
-            
-            .modal-buttons {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .modal-btn {
-                width: 100%;
-                min-width: auto;
+                font-size: 1.5em;
             }
         }
     </style>
@@ -517,6 +531,207 @@
             }
         }
     });
+
+    // Key Management Modal Functions
+    window.showKeyModal = function() {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay show';
+        modal.innerHTML = `
+            <div class="modal key-management-modal">
+                <div class="modal-title">Управление ключами</div>
+                <div class="key-section">
+                    <h4>Текущий ключ:</h4>
+                    <div class="current-key" id="currentKeyDisplay">Не установлен</div>
+                </div>
+                <div class="key-section">
+                    <h4>Установить новый ключ:</h4>
+                    <input type="text" id="newKeyInput" placeholder="Введите ключ шифрования" class="modal-input">
+                    <div class="btn-group">
+                        <button onclick="setKey()" class="btn btn-primary">Установить ключ</button>
+                    </div>
+                </div>
+                <div class="key-section">
+                    <h4>Генерация ключа:</h4>
+                    <div class="btn-group">
+                        <button onclick="generateKey()" class="btn btn-secondary">Сгенерировать новый ключ</button>
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button onclick="closeKeyModal()" class="modal-btn">Закрыть</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        // Update current key display
+        const currentKey = localStorage.getItem('chat_key_' + window.currentOtherUserId) || 
+                          localStorage.getItem('group_key_' + window.currentGroupId) || 
+                          'Не установлен';
+        const currentKeyDisplay = modal.querySelector('#currentKeyDisplay');
+        if (currentKeyDisplay) {
+            currentKeyDisplay.textContent = currentKey;
+        }
+    };
+
+    window.closeKeyModal = function() {
+        const modal = document.querySelector('.modal-overlay');
+        if (modal) {
+            modal.remove();
+        }
+    };
+
+    window.setKey = function() {
+        const newKey = document.getElementById('newKeyInput').value.trim();
+        if (newKey) {
+            if (window.currentOtherUserId) {
+                localStorage.setItem('chat_key_' + window.currentOtherUserId, newKey);
+            } else if (window.currentGroupId) {
+                localStorage.setItem('group_key_' + window.currentGroupId, newKey);
+            }
+            closeKeyModal();
+            alert('Ключ установлен');
+        } else {
+            alert('Введите ключ');
+        }
+    };
+
+    window.generateKey = function() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < 32; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        document.getElementById('newKeyInput').value = result;
+    };
+
+    // Group Management Modal Functions
+    window.showGroupModal = function() {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay show';
+        modal.innerHTML = `
+            <div class="modal group-management-modal">
+                <div class="modal-title">Управление группой</div>
+                <div class="group-section">
+                    <h4>Участники группы:</h4>
+                    <div class="members-list" id="membersList">
+                        <!-- Members will be loaded here -->
+                    </div>
+                </div>
+                <div class="group-section">
+                    <h4>Добавить участника по нику:</h4>
+                    <input type="text" id="newMemberNickname" placeholder="Введите ник пользователя" class="modal-input">
+                    <div class="btn-group">
+                        <button onclick="addMemberByNickname()" class="btn btn-primary">Добавить по нику</button>
+                    </div>
+                </div>
+                <div class="group-section">
+                    <h4>Пригласительная ссылка:</h4>
+                    <div class="invite-link-container">
+                        <input type="text" id="inviteLink" value="${window.currentInviteLink || ''}" readonly class="modal-input">
+                        <button onclick="copyInviteLink()" class="btn btn-secondary">Копировать ссылку</button>
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button onclick="closeGroupModal()" class="modal-btn">Закрыть</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        // Load members
+        loadGroupMembers();
+    };
+
+    window.closeGroupModal = function() {
+        const modal = document.querySelector('.modal-overlay');
+        if (modal) {
+            modal.remove();
+        }
+    };
+
+    window.loadGroupMembers = function() {
+        if (!window.currentInviteLink) return;
+        
+        fetch(`/group/${window.currentInviteLink}/members`)
+            .then(response => response.json())
+            .then(data => {
+                const membersList = document.getElementById('membersList');
+                if (membersList && data.members) {
+                    membersList.innerHTML = data.members.map(member => `
+                        <div class="member-item">
+                            <img src="/static/${member.avatar || 'avatars/cybermask.svg'}" alt="avatar">
+                            <span>${member.nickname_enc}</span>
+                            ${member.id !== window.currentGroupCreatorId ? 
+                                `<button onclick="removeMember(${member.id})" class="btn btn-danger">Удалить</button>` : 
+                                '<span>(Создатель)</span>'
+                            }
+                        </div>
+                    `).join('');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading members:', error);
+            });
+    };
+
+    window.addMemberByNickname = function() {
+        const nickname = document.getElementById('newMemberNickname').value.trim();
+        if (!nickname || !window.currentInviteLink) return;
+        
+        fetch(`/group/${window.currentInviteLink}/invite_by_nickname`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ nickname: nickname })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Пользователь добавлен в группу');
+                loadGroupMembers();
+                document.getElementById('newMemberNickname').value = '';
+            } else {
+                alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            console.error('Error adding member:', error);
+            alert('Ошибка добавления участника');
+        });
+    };
+
+    window.removeMember = function(userId) {
+        if (!window.currentInviteLink) return;
+        
+        if (confirm('Удалить участника из группы?')) {
+            fetch(`/group/${window.currentInviteLink}/remove_member/${userId}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Участник удален из группы');
+                    loadGroupMembers();
+                } else {
+                    alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'));
+                }
+            })
+            .catch(error => {
+                console.error('Error removing member:', error);
+                alert('Ошибка удаления участника');
+            });
+        }
+    };
+
+    window.copyInviteLink = function() {
+        const inviteLink = document.getElementById('inviteLink');
+        if (inviteLink) {
+            inviteLink.select();
+            document.execCommand('copy');
+            alert('Ссылка скопирована в буфер обмена');
+        }
+    };
     {% endraw %}
     </script>
 </body>

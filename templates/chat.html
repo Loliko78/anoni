@@ -92,37 +92,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 
-<!-- Modal для управления ключами -->
-<div id="keyModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Управление ключами</h3>
-            <button class="close-btn" onclick="closeKeyModal()" title="Закрыть">✕</button>
-        </div>
-        <div class="key-management">
-            <div class="key-section">
-                <h4>Текущий ключ:</h4>
-                <div class="current-key" id="currentKey">Не установлен</div>
-            </div>
-            <div class="key-section">
-                <h4>Установить новый ключ:</h4>
-                <input type="text" id="newKey" placeholder="Введите ключ шифрования" class="form-control">
-                <button onclick="setKey()" class="btn btn-primary">Установить ключ</button>
-            </div>
-            <div class="key-section">
-                <h4>Генерация ключа:</h4>
-                <button onclick="generateKey()" class="btn btn-secondary">Сгенерировать новый ключ</button>
-            </div>
-            {% if show_sync_button %}
-            <div class="key-section">
-                <h4>Синхронизация:</h4>
-                <button onclick="syncKeys()" class="btn btn-secondary">Синхронизировать ключи</button>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-</div>
-
 <script>
     // Инициализация Socket.IO с улучшенными настройками для мобильных устройств
     const socket = io({
@@ -138,6 +107,12 @@
     const chatId = {{ chat.id }};
     let currentKey = localStorage.getItem('chat_key_' + otherUserId) || null;
     const anonymousMode = {{ 'true' if anonymous_mode else 'false' }};
+    
+    // Устанавливаем глобальные переменные для модальных окон
+    window.currentOtherUserId = otherUserId;
+    window.currentGroupId = null;
+    window.currentInviteLink = null;
+    window.currentGroupCreatorId = null;
     
     const chatContainer = document.querySelector('.messages-container');
     const messageInput = document.getElementById('messageInput');
