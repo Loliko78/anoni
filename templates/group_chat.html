@@ -105,7 +105,7 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
             <h3>Управление ключами</h3>
             <button class="close-btn" onclick="closeKeyModal()" title="Закрыть">✕</button>
         </div>
-        <div class="modal-body">
+        <div class="key-management">
             <div class="key-section">
                 <h4>Текущий ключ:</h4>
                 <div class="current-key" id="currentKey">Не установлен</div>
@@ -131,25 +131,23 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
             <h3>Управление группой</h3>
             <button class="close-btn" onclick="closeGroupModal()" title="Закрыть">✕</button>
         </div>
-        <div class="modal-body">
-            <form method="POST" action="{{ url_for('group_chat', invite_link=invite_link) }}" enctype="multipart/form-data" class="avatar-form">
-                <div class="group-section">
-                    <h4>Сменить аватарку группы:</h4>
-                    <div class="avatar-choices">
-                        {% for icon in ['cybermask.svg', 'skull.svg', 'eye.svg', 'terminal.svg', 'hacker.svg'] %}
-                        <label>
-                            <input type="radio" name="avatar_choice" value="avatars/{{ icon }}" {% if group.avatar == 'avatars/' + icon %}checked{% endif %}>
-                            <img src="{{ url_for('static', filename='avatars/' + icon) }}" class="avatar-choice-img" alt="std-avatar">
-                        </label>
-                        {% endfor %}
-                        <label>
-                            <input type="file" name="avatar_upload" accept="image/*">
-                            <span class="avatar-upload-label">Загрузить...</span>
-                        </label>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Сохранить аватарку</button>
-                </div>
-            </form>
+        <form method="POST" action="{{ url_for('group_chat', invite_link=invite_link) }}" enctype="multipart/form-data" class="avatar-form">
+            <label>Сменить аватарку группы:</label>
+            <div class="avatar-choices">
+                {% for icon in ['cybermask.svg', 'skull.svg', 'eye.svg', 'terminal.svg', 'hacker.svg'] %}
+                <label>
+                    <input type="radio" name="avatar_choice" value="avatars/{{ icon }}" {% if group.avatar == 'avatars/' + icon %}checked{% endif %}>
+                    <img src="{{ url_for('static', filename='avatars/' + icon) }}" class="avatar-choice-img" alt="std-avatar">
+                </label>
+                {% endfor %}
+                <label>
+                    <input type="file" name="avatar_upload" accept="image/*">
+                    <span class="avatar-upload-label">Загрузить...</span>
+                </label>
+            </div>
+            <button type="submit" class="btn">Сохранить аватарку</button>
+        </form>
+        <div class="group-management">
             <div class="group-section">
                 <h4>Участники группы:</h4>
                 <div class="members-list">
@@ -234,8 +232,10 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
         const modal = document.getElementById('keyModal');
         console.log('Найден модальный элемент ключей:', modal);
         if (modal) {
-            modal.classList.add('show');
+            modal.style.display = 'block';
             console.log('Модальное окно ключей открыто');
+        } else {
+            console.error('Модальный элемент ключей не найден!');
         }
     }
     
@@ -246,7 +246,7 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
             localStorage.setItem('group_key_' + groupId, newKey);
             document.getElementById('currentKey').textContent = newKey;
             document.getElementById('newKey').value = '';
-            document.getElementById('keyModal').classList.remove('show');
+            document.getElementById('keyModal').style.display = 'none';
         }
     }
     
@@ -273,11 +273,9 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
         }
     }
     
+    // Закрытие модального окна ключей
     function closeKeyModal() {
-        const modal = document.getElementById('keyModal');
-        if (modal) {
-            modal.classList.remove('show');
-        }
+        document.getElementById('keyModal').style.display = 'none';
     }
     
     // Функции для управления группой
@@ -286,16 +284,15 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
         const modal = document.getElementById('groupModal');
         console.log('Найден модальный элемент группы:', modal);
         if (modal) {
-            modal.classList.add('show');
+            modal.style.display = 'block';
             console.log('Модальное окно группы открыто');
+        } else {
+            console.error('Модальный элемент группы не найден!');
         }
     }
     
     function closeGroupModal() {
-        const modal = document.getElementById('groupModal');
-        if (modal) {
-            modal.classList.remove('show');
-        }
+        document.getElementById('groupModal').style.display = 'none';
     }
     
     async function removeMember(userId) {
@@ -361,10 +358,10 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
         const groupModal = document.getElementById('groupModal');
         
         if (event.target == keyModal) {
-            keyModal.classList.remove('show');
+            keyModal.style.display = 'none';
         }
         if (event.target == groupModal) {
-            groupModal.classList.remove('show');
+            groupModal.style.display = 'none';
         }
     });
     

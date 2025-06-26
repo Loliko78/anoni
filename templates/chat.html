@@ -97,7 +97,7 @@
             <h3>Управление ключами</h3>
             <button class="close-btn" onclick="closeKeyModal()" title="Закрыть">✕</button>
         </div>
-        <div class="modal-body">
+        <div class="key-management">
             <div class="key-section">
                 <h4>Текущий ключ:</h4>
                 <div class="current-key" id="currentKey">Не установлен</div>
@@ -111,6 +111,12 @@
                 <h4>Генерация ключа:</h4>
                 <button onclick="generateKey()" class="btn btn-secondary">Сгенерировать новый ключ</button>
             </div>
+            {% if show_sync_button %}
+            <div class="key-section">
+                <h4>Синхронизация:</h4>
+                <button onclick="syncKeys()" class="btn btn-secondary">Синхронизировать ключи</button>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -286,8 +292,10 @@
         const modal = document.getElementById('keyModal');
         console.log('Найден модальный элемент:', modal);
         if (modal) {
-            modal.classList.add('show');
+            modal.style.display = 'block';
             console.log('Модальное окно открыто');
+        } else {
+            console.error('Модальный элемент не найден!');
         }
     }
     
@@ -298,7 +306,7 @@
             localStorage.setItem('chat_key_' + otherUserId, newKey);
             document.getElementById('currentKey').textContent = newKey;
             document.getElementById('newKey').value = '';
-            document.getElementById('keyModal').classList.remove('show');
+            document.getElementById('keyModal').style.display = 'none';
             
             // Автоматически перешифровываем все сообщения с новым ключом
             scrollToBottom();
@@ -359,17 +367,15 @@
         }
     }
     
+    // Закрытие модального окна
     function closeKeyModal() {
-        const modal = document.getElementById('keyModal');
-        if (modal) {
-            modal.classList.remove('show');
-        }
+        document.getElementById('keyModal').style.display = 'none';
     }
     
     window.addEventListener('click', function(event) {
         const modal = document.getElementById('keyModal');
         if (event.target == modal) {
-            modal.classList.remove('show');
+            modal.style.display = 'none';
         }
     });
     
