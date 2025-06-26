@@ -118,16 +118,31 @@
     const messageInput = document.getElementById('messageInput');
     const messageForm = document.getElementById('messageForm');
 
-    // Автоматическая прокрутка вниз
-    function scrollToBottom() {
+    // Автоматическая прокрутка вниз только при заходе в чат и при отправке/получении сообщения
+    let shouldAutoScroll = true;
+
+    function scrollToBottom(force=false) {
         if (chatContainer) {
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            if (force || shouldAutoScroll) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
         }
     }
 
     // Прокрутка при загрузке страницы
-    window.addEventListener('load', scrollToBottom);
-    document.addEventListener('DOMContentLoaded', scrollToBottom);
+    window.addEventListener('load', () => scrollToBottom(true));
+    document.addEventListener('DOMContentLoaded', () => scrollToBottom(true));
+
+    // Отключаем автоскролл, если пользователь прокручивает вверх
+    chatContainer.addEventListener('scroll', function() {
+        const threshold = 60; // px от низа
+        shouldAutoScroll = (chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight) < threshold;
+    });
+
+    // После отправки сообщения — автоскролл вниз
+    messageForm.addEventListener('submit', function() {
+        setTimeout(() => scrollToBottom(true), 100);
+    });
 
     // Обработка соединения Socket.IO
     socket.on('connect', function() {
@@ -200,7 +215,9 @@
             `;
             
             chatContainer.appendChild(messageDiv);
-            scrollToBottom();
+            if (shouldAutoScroll) {
+                scrollToBottom(true);
+            }
         }
     });
 
@@ -233,7 +250,7 @@
                 messageInput.value = '';
                 fileInput.value = '';
                 document.getElementById('fileName').textContent = '';
-                scrollToBottom();
+                scrollToBottom(true);
             } else {
                 console.error('Server error:', data.message);
                 alert('Ошибка отправки сообщения: ' + (data.message || 'Неизвестная ошибка'));
@@ -285,7 +302,7 @@
             document.getElementById('keyModal').style.display = 'none';
             
             // Автоматически перешифровываем все сообщения с новым ключом
-            scrollToBottom();
+            scrollToBottom(true);
         }
     }
     
@@ -306,7 +323,7 @@
                 document.getElementById('newKey').value = newKey;
                 
                 // Автоматически перешифровываем все сообщения с новым ключом
-                scrollToBottom();
+                scrollToBottom(true);
             } else {
                 alert(result.message || 'Ошибка генерации ключа');
             }
@@ -332,7 +349,7 @@
                 document.getElementById('newKey').value = newKey;
                 
                 // Автоматически перешифровываем все сообщения с новым ключом
-                scrollToBottom();
+                scrollToBottom(true);
                 
                 alert('Ключи успешно синхронизированы');
             } else {

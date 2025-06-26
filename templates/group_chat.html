@@ -600,7 +600,9 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
                 </div>
             `;
             messagesContainer.appendChild(messageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            if (shouldAutoScroll) {
+                scrollToBottom(true);
+            }
         }
     });
     
@@ -608,5 +610,31 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
     if (messageInput) {
         messageInput.focus();
     }
+
+    const chatContainer = document.querySelector('.messages-container');
+    let shouldAutoScroll = true;
+
+    function scrollToBottom(force=false) {
+        if (chatContainer) {
+            if (force || shouldAutoScroll) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }
+    }
+
+    // Прокрутка при загрузке страницы
+    window.addEventListener('load', () => scrollToBottom(true));
+    document.addEventListener('DOMContentLoaded', () => scrollToBottom(true));
+
+    // Отключаем автоскролл, если пользователь прокручивает вверх
+    chatContainer.addEventListener('scroll', function() {
+        const threshold = 60;
+        shouldAutoScroll = (chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight) < threshold;
+    });
+
+    // После отправки сообщения — автоскролл вниз
+    messageForm.addEventListener('submit', function() {
+        setTimeout(() => scrollToBottom(true), 100);
+    });
 </script>
 {% endblock %} 
