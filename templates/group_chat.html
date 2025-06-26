@@ -218,6 +218,14 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
     // Вызываем расшифровку при загрузке
     decryptExistingMessages();
     
+    // Отключаемся от комнаты при закрытии страницы
+    window.addEventListener('beforeunload', function() {
+        socket.emit('leave_group', {
+            invite_link: inviteLink,
+            user_id: currentUserId
+        });
+    });
+    
     // Функции для работы с ключами
     function showKeyModal() {
         document.getElementById('keyModal').style.display = 'block';
@@ -231,9 +239,6 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
             document.getElementById('currentKey').textContent = newKey;
             document.getElementById('newKey').value = '';
             document.getElementById('keyModal').style.display = 'none';
-            
-            // Автоматически перешифровываем все сообщения с новым ключом
-            decryptExistingMessages();
         }
     }
     
@@ -252,9 +257,6 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
                 localStorage.setItem('group_key_' + groupId, newKey);
                 document.getElementById('currentKey').textContent = newKey;
                 document.getElementById('newKey').value = newKey;
-                
-                // Автоматически перешифровываем все сообщения с новым ключом
-                decryptExistingMessages();
             } else {
                 alert(result.message || 'Ошибка генерации ключа');
             }
@@ -263,80 +265,94 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
         }
     }
     
-    // Функции для управления группой
-    {% if current_user.id == group.creator_id %}
-    function showGroupModal() {
-        document.getElementById('groupModal').style.display = 'block';
-    }
-    
-    async function addMemberByNickname() {
-        const nickname = document.getElementById('newMemberNickname').value.trim();
-        if (nickname) {
-            try {
-                const response = await fetch(`/group/{{ invite_link }}/invite_by_nickname`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ nickname: nickname })
-                });
-                const result = await response.json();
-                if (result.success) {
-                    alert('Пользователь успешно добавлен в группу');
-                    location.reload();
-                } else {
-                    alert(result.message || 'Ошибка добавления участника');
-                }
-            } catch (error) {
-                alert('Ошибка сети');
-            }
-        }
-    }
-    
-    function copyInviteLink() {
-        const inviteLink = document.getElementById('inviteLink');
-        inviteLink.select();
-        inviteLink.setSelectionRange(0, 99999); // Для мобильных устройств
-        document.execCommand('copy');
-        alert('Ссылка скопирована в буфер обмена');
-    }
-    
-    async function removeMember(memberId) {
-        if (confirm('Удалить участника из группы?')) {
-            try {
-                const response = await fetch(`/group/{{ invite_link }}/remove_member/${memberId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
-                const result = await response.json();
-                if (result.success) {
-                    location.reload();
-                } else {
-                    alert(result.message || 'Ошибка удаления участника');
-                }
-            } catch (error) {
-                alert('Ошибка сети');
-            }
-        }
-    }
-    {% endif %}
-    
-    // Закрытие модальных окон
+    // Закрытие модального окна ключей
     function closeKeyModal() {
         document.getElementById('keyModal').style.display = 'none';
+    }
+    
+    // Функции для управления группой
+    function showGroupModal() {
+        document.getElementById('groupModal').style.display = 'block';
     }
     
     function closeGroupModal() {
         document.getElementById('groupModal').style.display = 'none';
     }
     
+    async function removeMember(userId) {
+        if (confirm('Вы уверены, что хотите удалить этого участника из группы?')) {
+            try {
+                const response = await fetch(`/group/${inviteLink}/remove_member/${userId}`, {
+                    method: 'POST'
+                });
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Ошибка удаления участника');
+                }
+            } catch (error) {
+                alert('Ошибка сети при удалении участника');
+            }
+        }
+    }
+    
+    async function addMemberByNickname() {
+        const nickname = document.getElementById('newMemberNickname').value.trim();
+        if (!nickname) {
+            alert('Введите ник пользователя');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/group/${inviteLink}/invite_by_nickname`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ nickname: nickname })
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    alert('Пользователь успешно добавлен в группу');
+                    location.reload();
+                } else {
+                    alert(result.message || 'Ошибка добавления пользователя');
+                }
+            } else {
+                alert('Ошибка добавления пользователя');
+            }
+        } catch (error) {
+            alert('Ошибка сети при добавлении пользователя');
+        }
+    }
+    
+    function copyInviteLink() {
+        const inviteLinkInput = document.getElementById('inviteLink');
+        inviteLinkInput.select();
+        inviteLinkInput.setSelectionRange(0, 99999);
+        document.execCommand('copy');
+        alert('Ссылка скопирована в буфер обмена');
+    }
+    
+    // Закрытие модальных окон при клике вне их
     window.addEventListener('click', function(event) {
-        if (event.target.classList.contains('modal')) {
-            event.target.style.display = 'none';
+        const keyModal = document.getElementById('keyModal');
+        const groupModal = document.getElementById('groupModal');
+        
+        if (event.target == keyModal) {
+            keyModal.style.display = 'none';
+        }
+        if (event.target == groupModal) {
+            groupModal.style.display = 'none';
         }
     });
+    
+    // Инициализация текущего ключа при загрузке
+    if (currentKey) {
+        document.getElementById('currentKey').textContent = currentKey;
+    }
     
     // Функция шифрования
     async function encryptMessage(text, key) {
@@ -564,13 +580,5 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
     if (messageInput) {
         messageInput.focus();
     }
-    
-    // Отключаемся от комнаты при закрытии страницы
-    window.addEventListener('beforeunload', function() {
-        socket.emit('leave_group', {
-            invite_link: inviteLink,
-            user_id: currentUserId
-        });
-    });
 </script>
 {% endblock %} 

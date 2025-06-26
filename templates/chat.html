@@ -371,6 +371,11 @@
         }
     });
     
+    // Инициализация текущего ключа при загрузке
+    if (currentKey) {
+        document.getElementById('currentKey').textContent = currentKey;
+    }
+
     // Функция шифрования
     async function encryptMessage(text, key) {
         if (!key) return text;

@@ -1858,6 +1858,11 @@ def send_group_message(invite_link):
         traceback.print_exc()
         return jsonify({'success': False, 'message': f'Ошибка отправки сообщения: {str(e)}'}), 500
 
+@app.route('/test_modal')
+def test_modal():
+    """Тестовая страница для проверки модальных окон"""
+    return render_template('test_modal.html')
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
