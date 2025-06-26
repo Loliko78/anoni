@@ -214,7 +214,7 @@ main.content-wrapper {
 .modal {
     display: none;
     position: fixed;
-    z-index: 1000;
+    z-index: 10000;
     left: 0;
     top: 0;
     width: 100%;
@@ -222,18 +222,36 @@ main.content-wrapper {
     overflow: auto;
     background-color: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(5px);
-    animation: fadeIn 0.5s;
+    animation: fadeIn 0.3s ease;
 }
 
 .modal-content {
-    background: var(--background-color);
-    border: 1px solid var(--main-accent-color);
-    box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
-    margin: 10% auto;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    margin: 5% auto;
     padding: 25px;
     width: 90%;
     max-width: 600px;
     position: relative;
+    border-radius: 10px;
+    transform: translateY(-20px);
+    animation: modalSlideIn 0.3s ease forwards;
+}
+
+@keyframes modalSlideIn {
+    to {
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 .modal-header {
@@ -616,25 +634,47 @@ a {
 
 /* Modal button styles */
 .modal .btn {
-    background: var(--main-accent-color);
-    color: var(--background-color);
-    border: none;
+    background: var(--accent-color);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
     padding: 10px 20px;
-    font-family: var(--font-main);
-    font-size: 1em;
+    border-radius: 5px;
     cursor: pointer;
-    transition: all 0.3s;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
     margin: 5px;
+    text-decoration: none;
+    display: inline-block;
 }
 
 .modal .btn:hover {
-    background: var(--secondary-accent-color);
-    box-shadow: 0 0 10px var(--main-accent-color);
+    background: var(--accent-hover);
+    color: var(--text-primary);
+    transform: translateY(-1px);
 }
 
 .modal .btn.btn-small {
-    padding: 8px 15px;
-    font-size: 0.9em;
+    padding: 6px 12px;
+    font-size: 0.8em;
+    margin: 2px;
+}
+
+.modal .btn.btn-primary {
+    background: var(--accent-color);
+    color: var(--text-primary);
+    border-color: var(--accent-color);
+}
+
+.modal .btn.btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+.modal .btn.btn-danger {
+    background: var(--error-color);
+    color: var(--text-primary);
+    border-color: var(--error-color);
 }
 
 /* Key management button */
@@ -1814,51 +1854,73 @@ a {
 
 /* Modal button styles */
 .modal .btn {
-    background: var(--main-accent-color);
-    color: var(--background-color);
-    border: 1px solid var(--main-accent-color);
-    padding: 0.5rem 1rem;
-    font-family: 'VT323', monospace;
-    font-size: 1rem;
+    background: var(--accent-color);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 10px 20px;
+    border-radius: 5px;
     cursor: pointer;
+    font-size: 0.9em;
     transition: all 0.3s ease;
-    margin: 0.25rem;
+    margin: 5px;
+    text-decoration: none;
+    display: inline-block;
 }
 
 .modal .btn:hover {
     background: var(--accent-hover);
-    box-shadow: 0 0 10px var(--main-accent-color);
-    transform: scale(1.05);
+    color: var(--text-primary);
+    transform: translateY(-1px);
 }
 
 .modal .btn.btn-small {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.8rem;
+    padding: 6px 12px;
+    font-size: 0.8em;
+    margin: 2px;
 }
 
-/* Key management button in header */
+.modal .btn.btn-primary {
+    background: var(--accent-color);
+    color: var(--text-primary);
+    border-color: var(--accent-color);
+}
+
+.modal .btn.btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+.modal .btn.btn-danger {
+    background: var(--error-color);
+    color: var(--text-primary);
+    border-color: var(--error-color);
+}
+
+/* Key management button */
 .key-management-btn {
-    margin: 0;
+    display: flex;
+    align-items: center;
 }
 
 .key-management-btn .btn {
     background: var(--main-accent-color);
     color: var(--background-color);
-    border: 1px solid var(--main-accent-color);
-    padding: 0.5rem 1rem;
-    font-family: 'VT323', monospace;
-    font-size: 0.9rem;
+    border: none;
+    padding: 8px 15px;
+    font-family: var(--font-main);
+    font-size: 0.9em;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s;
+    white-space: nowrap;
 }
 
 .key-management-btn .btn:hover {
-    background: var(--accent-hover);
+    background: var(--secondary-accent-color);
     box-shadow: 0 0 10px var(--main-accent-color);
-    transform: scale(1.05);
 }
 
-/* Management buttons in header */
+/* Management buttons */
 .management-buttons {
     display: flex;
     gap: 0.5rem;
@@ -1965,14 +2027,15 @@ a {
     
     .modal-content {
         width: 95%;
-        margin: 5% auto;
-        padding: 15px;
+        margin: 10% auto;
+        padding: 20px;
+        max-width: 500px;
     }
     
     .modal .btn {
-        padding: 6px 12px;
-        font-size: 0.8em;
-        margin: 2px;
+        padding: 8px 16px;
+        font-size: 0.9em;
+        margin: 3px;
     }
 }
 
@@ -2057,14 +2120,15 @@ a {
     
     .modal-content {
         width: 98%;
-        margin: 2% auto;
-        padding: 12px;
+        margin: 15% auto;
+        padding: 15px;
+        max-width: 400px;
     }
     
     .modal .btn {
-        padding: 5px 10px;
-        font-size: 0.75em;
-        margin: 1px;
+        padding: 6px 12px;
+        font-size: 0.8em;
+        margin: 2px;
     }
 }
 
