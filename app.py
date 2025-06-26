@@ -1867,6 +1867,167 @@ def test_modal():
 def delete_profile_page():
     return render_template('delete_profile.html')
 
+@app.route('/key_management/<int:chat_id>', methods=['GET', 'POST'])
+@login_required
+def key_management(chat_id):
+    # Находим чат
+    chat = db.session.get(Chat, chat_id)
+    if not chat:
+        abort(404)
+    
+    # Проверяем, что пользователь является участником чата
+    if chat.user1_id != current_user.id and chat.user2_id != current_user.id:
+        abort(403)
+    
+    # Определяем тип чата и другого пользователя
+    if chat.user1_id == current_user.id:
+        other_user = chat.user2
+        chat_type = 'personal'
+    else:
+        other_user = chat.user1
+        chat_type = 'personal'
+    
+    # Обработка POST запроса для установки нового ключа
+    if request.method == 'POST':
+        new_key = request.form.get('new_key', '').strip()
+        if new_key:
+            # Сохраняем ключ в localStorage на клиенте
+            # Здесь мы просто возвращаем ключ для отображения
+            current_key = new_key
+        else:
+            current_key = None
+    else:
+        current_key = None
+    
+    back_url = url_for('chat', chat_id=chat_id)
+    
+    return render_template('key_management.html', 
+                         chat=chat, 
+                         other_user=other_user, 
+                         chat_type=chat_type,
+                         current_key=current_key,
+                         back_url=back_url)
+
+@app.route('/group_management/<invite_link>', methods=['GET', 'POST'])
+@login_required
+def group_management(invite_link):
+    # Находим группу по invite_link
+    group = Group.query.filter_by(invite_link_enc=invite_link.encode('utf-8')).first()
+    if not group:
+        abort(404)
+    
+    # Проверяем, что пользователь является участником группы
+    membership = GroupMember.query.filter_by(group_id=group.id, user_id=current_user.id).first()
+    if not membership:
+        abort(403)
+    
+    # Получаем создателя группы
+    creator = db.session.get(User, group.creator_id)
+    
+    # Получаем всех участников группы
+    members = []
+    for member in group.members:
+        user = db.session.get(User, member.user_id)
+        if user:
+            members.append(user)
+    
+    # Обработка POST запросов
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'change_avatar':
+            # Обработка смены аватарки
+            avatar_choice = request.form.get('avatar_choice')
+            avatar_upload = request.files.get('avatar_upload')
+            
+            if avatar_upload and avatar_upload.filename:
+                # Загруженный файл
+                filename = secure_filename(avatar_upload.filename)
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                avatar_upload.save(filepath)
+                group.avatar = f'uploads/{filename}'
+            elif avatar_choice:
+                # Выбранная предустановленная аватарка
+                group.avatar = avatar_choice
+            
+            db.session.commit()
+            flash('Аватарка группы обновлена', 'success')
+            
+        elif action == 'add_member':
+            # Добавление участника по нику
+            nickname = request.form.get('nickname', '').strip()
+            if nickname:
+                user = User.query.filter_by(nickname_enc=nickname).first()
+                if user:
+                    # Проверяем, не является ли пользователь уже участником
+                    existing_member = GroupMember.query.filter_by(group_id=group.id, user_id=user.id).first()
+                    if not existing_member:
+                        new_member = GroupMember(group_id=group.id, user_id=user.id)
+                        db.session.add(new_member)
+                        db.session.commit()
+                        flash(f'Пользователь {nickname} добавлен в группу', 'success')
+                    else:
+                        flash(f'Пользователь {nickname} уже является участником группы', 'warning')
+                else:
+                    flash(f'Пользователь с ником {nickname} не найден', 'danger')
+            else:
+                flash('Введите ник пользователя', 'danger')
+                
+        elif action == 'remove_member':
+            # Удаление участника
+            user_id = request.form.get('user_id', type=int)
+            if user_id and user_id != group.creator_id:
+                member = GroupMember.query.filter_by(group_id=group.id, user_id=user_id).first()
+                if member:
+                    db.session.delete(member)
+                    db.session.commit()
+                    flash('Участник удален из группы', 'success')
+                else:
+                    flash('Участник не найден', 'danger')
+            else:
+                flash('Нельзя удалить создателя группы', 'danger')
+    
+    # Получаем текущий ключ группы (если есть)
+    current_group_key = None  # В реальной реализации здесь будет получение ключа
+    
+    return render_template('group_management.html', 
+                         group=group, 
+                         creator=creator,
+                         members=members,
+                         invite_link=invite_link,
+                         current_group_key=current_group_key)
+
+@app.route('/group_key_management/<invite_link>', methods=['GET', 'POST'])
+@login_required
+def group_key_management(invite_link):
+    # Находим группу по invite_link
+    group = Group.query.filter_by(invite_link_enc=invite_link.encode('utf-8')).first()
+    if not group:
+        abort(404)
+    
+    # Проверяем, что пользователь является участником группы
+    membership = GroupMember.query.filter_by(group_id=group.id, user_id=current_user.id).first()
+    if not membership:
+        abort(403)
+    
+    # Обработка POST запроса для установки нового ключа
+    if request.method == 'POST':
+        new_key = request.form.get('new_key', '').strip()
+        if new_key:
+            current_key = new_key
+        else:
+            current_key = None
+    else:
+        current_key = None
+    
+    back_url = url_for('group_chat', invite_link=invite_link)
+    
+    return render_template('key_management.html', 
+                         group=group,
+                         chat_type='group',
+                         current_key=current_key,
+                         back_url=back_url)
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

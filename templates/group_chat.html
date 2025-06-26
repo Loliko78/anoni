@@ -40,9 +40,9 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
             <h2>Группа: {{ group.name }}</h2>
             <div class="key-info">
                 {% if current_user.id == group.creator_id %}
-                <button onclick="showGroupModal()">Управление группой</button>
+                <a href="{{ url_for('group_management', invite_link=invite_link) }}" class="btn btn-primary">Управление группой</a>
                 {% endif %}
-                <button onclick="showKeyModal()">Управление ключами</button>
+                <a href="{{ url_for('group_key_management', invite_link=invite_link) }}" class="btn btn-primary">Управление ключами</a>
                 <a href="{{ url_for('index') }}" class="btn btn-secondary">Назад</a>
             </div>
         </div>

@@ -35,7 +35,7 @@
             </div>
             <h2>Чат с {{ other_user.nickname_enc }}</h2>
             <div class="key-info">
-                <button onclick="console.log('Кнопка нажата!'); showKeyModal();">Управление ключами</button>
+                <a href="{{ url_for('key_management', chat_id=chat.id) }}" class="btn btn-primary">Управление ключами</a>
                 <a href="{{ url_for('index') }}" class="btn btn-secondary">Назад</a>
             </div>
         </div>
