@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Удаление профиля{% endblock %}
+
+{% block content %}
+<div class="delete-profile-container">
+    <div class="delete-profile-content">
+        <div class="delete-profile-header">
+            <h2 class="glitch-text" data-text="НИЧЕГО НЕ ПРОПАДАЕТ БЕССЛЕДНО">НИЧЕГО НЕ ПРОПАДАЕТ БЕССЛЕДНО</h2>
+        </div>
+        
+        <div class="delete-profile-message">
+            <div class="ascii-art">
+                ╔══════════════════════════════════════════════════════════════╗
+                ║                                                              ║
+                ║  В СЕТИ ВСЕ ОСТАЕТСЯ НАВСЕГДА                               ║
+                ║  КАЖДЫЙ БАЙТ, КАЖДОЕ СООБЩЕНИЕ, КАЖДЫЙ СЛЕД                 ║
+                ║                                                              ║
+                ║  ВАШИ ДАННЫЕ УЖЕ РАЗМЕЩЕНЫ В БЕЗДНЕ ИНТЕРНЕТА              ║
+                ║  И НИКТО НЕ МОЖЕТ ИХ ПОЛНОСТЬЮ УДАЛИТЬ                     ║
+                ║                                                              ║
+                ║  НО ВЫ МОЖЕТЕ НАЧАТЬ ЗАНОВО...                              ║
+                ║                                                              ║
+                ╚══════════════════════════════════════════════════════════════╝
+            </div>
+            
+            <div class="delete-profile-text">
+                <p>Ваш профиль не был удален. Вместо этого вы были перенаправлены на эту страницу.</p>
+                <p>В реальном мире удаление данных - это иллюзия. Каждый файл, каждое сообщение оставляет след в цифровом пространстве.</p>
+                <p>Но вы можете начать заново, создать новую личность, новую историю.</p>
+            </div>
+            
+            <div class="delete-profile-actions">
+                <a href="{{ url_for('profile') }}" class="btn btn-primary">Вернуться в профиль</a>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">На главную</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.delete-profile-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+    padding: 2rem;
+}
+
+.delete-profile-content {
+    background: var(--bg-primary);
+    border: 1px solid var(--main-accent-color);
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+    border-radius: 10px;
+    padding: 3rem;
+    max-width: 800px;
+    text-align: center;
+}
+
+.delete-profile-header h2 {
+    color: var(--main-accent-color);
+    font-size: 2.5em;
+    margin-bottom: 2rem;
+    text-shadow: 0 0 10px var(--main-accent-color);
+    animation: glitch 2s infinite;
+}
+
+.delete-profile-message {
+    margin-top: 2rem;
+}
+
+.ascii-art {
+    color: var(--main-accent-color);
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.2;
+    margin: 2rem 0;
+    text-shadow: 0 0 5px var(--main-accent-color);
+}
+
+.delete-profile-text {
+    margin: 2rem 0;
+    color: var(--text-primary);
+    font-size: 1.1em;
+    line-height: 1.6;
+}
+
+.delete-profile-text p {
+    margin: 1rem 0;
+}
+
+.delete-profile-actions {
+    margin-top: 3rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.delete-profile-actions .btn {
+    padding: 12px 24px;
+    font-size: 1.1em;
+    min-width: 150px;
+}
+
+@keyframes glitch {
+    0%, 100% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+}
+
+@media (max-width: 768px) {
+    .delete-profile-container {
+        padding: 1rem;
+    }
+    
+    .delete-profile-content {
+        padding: 2rem;
+    }
+    
+    .delete-profile-header h2 {
+        font-size: 1.8em;
+    }
+    
+    .ascii-art {
+        font-size: 10px;
+    }
+    
+    .delete-profile-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .delete-profile-actions .btn {
+        width: 100%;
+        max-width: 300px;
+    }
+}
+
+@media (max-width: 480px) {
+    .delete-profile-header h2 {
+        font-size: 1.5em;
+    }
+    
+    .ascii-art {
+        font-size: 8px;
+    }
+    
+    .delete-profile-text {
+        font-size: 1em;
+    }
+}
+</style>
+{% endblock %} 

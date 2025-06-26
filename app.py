@@ -1860,8 +1860,12 @@ def send_group_message(invite_link):
 
 @app.route('/test_modal')
 def test_modal():
-    """Тестовая страница для проверки модальных окон"""
     return render_template('test_modal.html')
+
+@app.route('/delete_profile_page')
+@login_required
+def delete_profile_page():
+    return render_template('delete_profile.html')
 
 if __name__ == '__main__':
     with app.app_context():

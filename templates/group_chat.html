@@ -98,6 +98,8 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
     </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+
 <!-- Modal для управления ключами -->
 <div id="keyModal" class="modal">
     <div class="modal-content">
@@ -179,7 +181,6 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
 </div>
 {% endif %}
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 <script>
     const socket = io();
     const currentUserId = {{ current_user.id }};

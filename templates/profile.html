@@ -44,10 +44,7 @@
         <div class="danger-zone">
             <h4>Опасная зона</h4>
             <button onclick="resetAllKeys()" class="btn btn-danger">Сбросить все ключи</button>
-            <form method="POST" action="{{ url_for('profile') }}" onsubmit="return confirm('Удалить профиль безвозвратно?');">
-                <input type="hidden" name="delete_profile" value="1">
-                <button type="submit" class="btn btn-danger" style="margin-top:1em;">Удалить профиль</button>
-            </form>
+            <a href="{{ url_for('delete_profile_page') }}" class="btn btn-danger" style="margin-top:1em;display:inline-block;text-decoration:none;">Удалить профиль</a>
         </div>
     </div>
 </div>
