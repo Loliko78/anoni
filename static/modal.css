@@ -1,0 +1,352 @@
+/* ===== СТИЛИ МОДАЛЬНЫХ ОКОН ===== */
+
+/* Основной контейнер модального окна */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 9999;
+    backdrop-filter: blur(5px);
+}
+
+/* Показываем модальное окно */
+.modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: modalFadeIn 0.3s ease;
+}
+
+/* Контент модального окна */
+.modal-content {
+    background: #111112;
+    border: 2px solid #444448;
+    border-radius: 12px;
+    padding: 0;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    animation: modalSlideIn 0.3s ease;
+}
+
+/* Заголовок модального окна */
+.modal-header {
+    background: #232326;
+    padding: 20px 25px 15px 25px;
+    border-bottom: 1px solid #2a2a2d;
+    border-radius: 10px 10px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    color: #e0e0e0;
+    font-size: 1.4em;
+    margin: 0;
+    font-weight: normal;
+}
+
+/* Кнопка закрытия */
+.close-btn {
+    background: #444448;
+    color: #e0e0e0;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+    background: #66666a;
+    transform: scale(1.1);
+}
+
+/* Тело модального окна */
+.modal-body {
+    padding: 25px;
+}
+
+/* Секции внутри модального окна */
+.key-section,
+.group-section {
+    margin-bottom: 25px;
+}
+
+.key-section h4,
+.group-section h4 {
+    color: #e0e0e0;
+    font-size: 1.1em;
+    margin: 0 0 12px 0;
+    border-bottom: 1px solid #2a2a2d;
+    padding-bottom: 8px;
+}
+
+/* Текущий ключ */
+.current-key {
+    background: #232326;
+    border: 1px solid #2a2a2d;
+    border-radius: 6px;
+    padding: 12px;
+    color: #b0b0b0;
+    font-family: monospace;
+    word-break: break-all;
+    margin-bottom: 15px;
+}
+
+/* Поля ввода */
+.modal input[type="text"],
+.modal input[type="password"],
+.modal textarea,
+.key-input,
+.form-control {
+    width: 100%;
+    background: #232326;
+    border: 1px solid #2a2a2d;
+    color: #e0e0e0;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+}
+
+.modal input[type="text"]:focus,
+.modal input[type="password"]:focus,
+.modal textarea:focus,
+.key-input:focus,
+.form-control:focus {
+    outline: none;
+    border-color: #444448;
+    box-shadow: 0 0 0 2px rgba(68, 68, 72, 0.2);
+}
+
+/* Кнопки в модальном окне */
+.modal .btn {
+    background: #444448;
+    color: #e0e0e0;
+    border: 1px solid #2a2a2d;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    margin: 5px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.modal .btn:hover {
+    background: #66666a;
+    transform: translateY(-1px);
+}
+
+.modal .btn.btn-primary {
+    background: #444448;
+    border-color: #444448;
+}
+
+.modal .btn.btn-secondary {
+    background: #232326;
+    border-color: #2a2a2d;
+}
+
+.modal .btn.btn-danger {
+    background: #b84a4a;
+    border-color: #b84a4a;
+}
+
+/* Список участников */
+.members-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #2a2a2d;
+    border-radius: 6px;
+    background: #232326;
+}
+
+.member-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid #2a2a2d;
+    gap: 10px;
+}
+
+.member-item:last-child {
+    border-bottom: none;
+}
+
+.member-item img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.member-item span {
+    flex: 1;
+    color: #e0e0e0;
+}
+
+/* Контейнер для ссылки приглашения */
+.invite-link-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.invite-link-container input {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+/* Выбор аватаров */
+.avatar-choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.avatar-choice-img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.avatar-choice-img:hover {
+    border-color: #444448;
+}
+
+input[type="radio"]:checked + .avatar-choice-img {
+    border-color: #444448;
+    box-shadow: 0 0 10px #444448;
+}
+
+.avatar-upload-label {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #444448;
+    color: #e0e0e0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.avatar-upload-label:hover {
+    background: #66666a;
+}
+
+/* Анимации */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px) scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+/* Мобильные стили */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        max-width: 400px;
+        max-height: 85vh;
+    }
+    
+    .modal-header {
+        padding: 15px 20px 10px 20px;
+    }
+    
+    .modal-header h3 {
+        font-size: 1.2em;
+    }
+    
+    .modal-body {
+        padding: 20px;
+    }
+    
+    .modal .btn {
+        padding: 8px 16px;
+        font-size: 13px;
+        margin: 3px;
+    }
+    
+    .avatar-choices {
+        gap: 8px;
+    }
+    
+    .avatar-choice-img {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-content {
+        width: 98%;
+        max-width: 350px;
+        margin: 10px;
+    }
+    
+    .modal-header {
+        padding: 12px 15px 8px 15px;
+    }
+    
+    .modal-header h3 {
+        font-size: 1.1em;
+    }
+    
+    .modal-body {
+        padding: 15px;
+    }
+    
+    .modal .btn {
+        padding: 6px 12px;
+        font-size: 12px;
+        margin: 2px;
+    }
+    
+    .avatar-choice-img {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .invite-link-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .invite-link-container .btn {
+        margin: 0;
+    }
+} 
