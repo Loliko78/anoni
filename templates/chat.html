@@ -35,7 +35,7 @@
             </div>
             <h2>Чат с {{ other_user.nickname_enc }}</h2>
             <div class="key-info">
-                <button onclick="showKeyModal()">Управление ключами</button>
+                <button onclick="console.log('Кнопка нажата!'); showKeyModal();">Управление ключами</button>
                 <a href="{{ url_for('index') }}" class="btn btn-secondary">Назад</a>
             </div>
         </div>
@@ -288,7 +288,15 @@
 
     // Функции для работы с ключами
     function showKeyModal() {
-        document.getElementById('keyModal').style.display = 'block';
+        console.log('showKeyModal вызвана');
+        const modal = document.getElementById('keyModal');
+        console.log('Найден модальный элемент:', modal);
+        if (modal) {
+            modal.style.display = 'block';
+            console.log('Модальное окно открыто');
+        } else {
+            console.error('Модальный элемент не найден!');
+        }
     }
     
     function setKey() {
@@ -486,6 +494,53 @@
             return encryptedText; // Возвращаем исходный текст если не удалось расшифровать
         }
     }
+
+    // Добавляем обработчики событий для кнопок
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM загружен, добавляем обработчики событий');
+        
+        // Проверяем наличие модальных окон
+        const keyModal = document.getElementById('keyModal');
+        console.log('Модальное окно ключей найдено:', keyModal);
+        
+        // Кнопка управления ключами
+        const keyButton = document.querySelector('button[onclick="showKeyModal()"]');
+        if (keyButton) {
+            console.log('Найдена кнопка управления ключами');
+            keyButton.removeAttribute('onclick');
+            keyButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Клик по кнопке управления ключами');
+                showKeyModal();
+            });
+        } else {
+            console.error('Кнопка управления ключами не найдена');
+            // Попробуем найти кнопку по тексту
+            const allButtons = document.querySelectorAll('button');
+            allButtons.forEach(button => {
+                if (button.textContent.includes('Управление ключами')) {
+                    console.log('Найдена кнопка по тексту:', button);
+                    button.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        console.log('Клик по кнопке управления ключами (найдена по тексту)');
+                        showKeyModal();
+                    });
+                }
+            });
+        }
+        
+        // Кнопка закрытия модального окна
+        const closeButton = document.querySelector('button[onclick="closeKeyModal()"]');
+        if (closeButton) {
+            console.log('Найдена кнопка закрытия');
+            closeButton.removeAttribute('onclick');
+            closeButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Клик по кнопке закрытия');
+                closeKeyModal();
+            });
+        }
+    });
 </script>
 
 <style>

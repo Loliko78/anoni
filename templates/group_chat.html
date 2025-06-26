@@ -228,7 +228,15 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
     
     // Функции для работы с ключами
     function showKeyModal() {
-        document.getElementById('keyModal').style.display = 'block';
+        console.log('showKeyModal вызвана (группа)');
+        const modal = document.getElementById('keyModal');
+        console.log('Найден модальный элемент ключей:', modal);
+        if (modal) {
+            modal.style.display = 'block';
+            console.log('Модальное окно ключей открыто');
+        } else {
+            console.error('Модальный элемент ключей не найден!');
+        }
     }
     
     function setKey() {
@@ -272,7 +280,15 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
     
     // Функции для управления группой
     function showGroupModal() {
-        document.getElementById('groupModal').style.display = 'block';
+        console.log('showGroupModal вызвана');
+        const modal = document.getElementById('groupModal');
+        console.log('Найден модальный элемент группы:', modal);
+        if (modal) {
+            modal.style.display = 'block';
+            console.log('Модальное окно группы открыто');
+        } else {
+            console.error('Модальный элемент группы не найден!');
+        }
     }
     
     function closeGroupModal() {
@@ -353,6 +369,92 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
     if (currentKey) {
         document.getElementById('currentKey').textContent = currentKey;
     }
+    
+    // Добавляем обработчики событий для кнопок
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM загружен (группа), добавляем обработчики событий');
+        
+        // Проверяем наличие модальных окон
+        const keyModal = document.getElementById('keyModal');
+        const groupModal = document.getElementById('groupModal');
+        console.log('Модальное окно ключей найдено:', keyModal);
+        console.log('Модальное окно группы найдено:', groupModal);
+        
+        // Кнопка управления ключами
+        const keyButton = document.querySelector('button[onclick="showKeyModal()"]');
+        if (keyButton) {
+            console.log('Найдена кнопка управления ключами (группа)');
+            keyButton.removeAttribute('onclick');
+            keyButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Клик по кнопке управления ключами (группа)');
+                showKeyModal();
+            });
+        } else {
+            console.error('Кнопка управления ключами не найдена (группа)');
+            // Попробуем найти кнопку по тексту
+            const allButtons = document.querySelectorAll('button');
+            allButtons.forEach(button => {
+                if (button.textContent.includes('Управление ключами')) {
+                    console.log('Найдена кнопка управления ключами по тексту:', button);
+                    button.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        console.log('Клик по кнопке управления ключами (найдена по тексту)');
+                        showKeyModal();
+                    });
+                }
+            });
+        }
+        
+        // Кнопка управления группой
+        const groupButton = document.querySelector('button[onclick="showGroupModal()"]');
+        if (groupButton) {
+            console.log('Найдена кнопка управления группой');
+            groupButton.removeAttribute('onclick');
+            groupButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Клик по кнопке управления группой');
+                showGroupModal();
+            });
+        } else {
+            console.error('Кнопка управления группой не найдена');
+            // Попробуем найти кнопку по тексту
+            const allButtons = document.querySelectorAll('button');
+            allButtons.forEach(button => {
+                if (button.textContent.includes('Управление группой')) {
+                    console.log('Найдена кнопка управления группой по тексту:', button);
+                    button.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        console.log('Клик по кнопке управления группой (найдена по тексту)');
+                        showGroupModal();
+                    });
+                }
+            });
+        }
+        
+        // Кнопки закрытия модальных окон
+        const closeKeyButton = document.querySelector('button[onclick="closeKeyModal()"]');
+        if (closeKeyButton) {
+            console.log('Найдена кнопка закрытия ключей');
+            closeKeyButton.removeAttribute('onclick');
+            closeKeyButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Клик по кнопке закрытия ключей');
+                closeKeyModal();
+            });
+        }
+        
+        const closeGroupButton = document.querySelector('button[onclick="closeGroupModal()"]');
+        if (closeGroupButton) {
+            console.log('Найдена кнопка закрытия группы');
+            closeGroupButton.removeAttribute('onclick');
+            closeGroupButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Клик по кнопке закрытия группы');
+                closeGroupModal();
+            });
+        }
+    });
     
     // Функция шифрования
     async function encryptMessage(text, key) {
