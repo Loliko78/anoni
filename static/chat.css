@@ -481,4 +481,120 @@
 }
 .file-attach-label:hover {
     color: var(--accent-hover);
+}
+
+@media (max-width: 600px) {
+    .chat-container, .channel-container {
+        max-width: 100vw;
+        border-radius: 0;
+        margin: 0;
+        min-width: 0;
+    }
+    .chat-header, .channel-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+        padding: 8px 4px;
+        width: 100%;
+        min-width: 0;
+    }
+    .chat-header h2, .channel-header h2 {
+        font-size: 1em;
+        word-break: break-word;
+        max-width: 100vw;
+        margin-bottom: 2px;
+    }
+    .chat-header .key-info, .channel-header .key-info {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        width: 100%;
+        justify-content: flex-start;
+        min-width: 0;
+    }
+    .chat-header .key-info a, .chat-header .key-info button,
+    .channel-header .key-info a, .channel-header .key-info button {
+        font-size: 0.9em;
+        padding: 6px 10px;
+        min-width: 0;
+        height: 34px;
+        max-width: 100vw;
+        box-sizing: border-box;
+        flex: 1 1 120px;
+        margin-bottom: 2px;
+        width: 100%;
+    }
+    .messages-container, .channel-messages-container {
+        padding: 6px 2px;
+        gap: 4px;
+    }
+    .chat-input-container, .channel-input-container {
+        padding: 6px 4px;
+    }
+    .chat-input-form, .channel-input-form {
+        flex-direction: column;
+        gap: 4px;
+        align-items: stretch;
+        width: 100%;
+    }
+    .chat-input-group, .channel-input-group {
+        width: 100%;
+        gap: 0;
+    }
+    .chat-input, .channel-input {
+        font-size: 1em;
+        min-height: 36px;
+        max-height: 70px;
+        padding: 8px 10px;
+        border-radius: 12px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .chat-send-btn, .channel-send-btn {
+        font-size: 1em;
+        min-width: 70px;
+        height: 36px;
+        padding: 0 8px;
+        border-radius: 12px;
+        width: 100%;
+        margin: 0;
+        box-sizing: border-box;
+    }
+    .file-attach-label {
+        margin: 0;
+        padding: 0 2px;
+        width: 100%;
+        justify-content: flex-start;
+        box-sizing: border-box;
+    }
+}
+
+@media (max-width: 400px) {
+    .chat-header, .channel-header {
+        gap: 2px;
+        padding: 4px 2px;
+    }
+    .chat-header h2, .channel-header h2 {
+        font-size: 0.95em;
+    }
+    .chat-header .key-info a, .chat-header .key-info button,
+    .channel-header .key-info a, .channel-header .key-info button {
+        font-size: 0.8em;
+        padding: 4px 6px;
+        height: 28px;
+    }
+    .chat-input, .channel-input {
+        font-size: 0.95em;
+        min-height: 28px;
+        max-height: 50px;
+        padding: 6px 6px;
+        border-radius: 8px;
+    }
+    .chat-send-btn, .channel-send-btn {
+        font-size: 0.95em;
+        min-width: 50px;
+        height: 28px;
+        padding: 0 4px;
+        border-radius: 8px;
+    }
 } 
