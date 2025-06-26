@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="auth-container">
-    <h2>> УЧАСТНИКИ ГРУППЫ: {{ group.name }}</h2>
+    <h2>> УЧАСТНИКИ ГРУППЫ: {{ group.name_enc.decode('utf-8') if group.name_enc else 'Unknown Group' }}</h2>
 
     {% if is_creator %}
     <div class="invite-section">

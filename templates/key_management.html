@@ -11,7 +11,7 @@
                 {% if chat_type == 'personal' %}
                     <p>Личный чат с {{ other_user.nickname_enc }}</p>
                 {% else %}
-                    <p>Группа: {{ group.name }}</p>
+                    <p>Группа: {{ group.name_enc.decode('utf-8') if group.name_enc else 'Unknown Group' }}</p>
                 {% endif %}
             </div>
         </div>
@@ -340,6 +340,13 @@ function syncKeys() {
             .then(data => {
                 if (data.success) {
                     alert('Ключи синхронизированы');
+                    // Обновляем отображение ключа
+                    document.getElementById('currentKeyDisplay').innerHTML = `
+                        <span class="key-text">${data.chat_key}</span>
+                        <button onclick="copyKey()" class="btn btn-secondary">Копировать</button>
+                    `;
+                    // Сохраняем новый ключ в localStorage
+                    localStorage.setItem('chat_key_{{ other_user.id }}', data.chat_key);
                 } else {
                     alert('Ошибка синхронизации: ' + (data.message || 'Неизвестная ошибка'));
                 }
@@ -350,6 +357,39 @@ function syncKeys() {
             });
         } else {
             alert('Нет ключа для синхронизации');
+        }
+    {% else %}
+        // Синхронизация ключей для группы
+        const currentKey = localStorage.getItem('group_key_{{ group.id }}');
+        if (currentKey) {
+            fetch('/group/{{ invite_link }}/sync_keys', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ key: currentKey })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Ключи группы синхронизированы');
+                    // Обновляем отображение ключа
+                    document.getElementById('currentKeyDisplay').innerHTML = `
+                        <span class="key-text">${data.key}</span>
+                        <button onclick="copyKey()" class="btn btn-secondary">Копировать</button>
+                    `;
+                    // Сохраняем новый ключ в localStorage
+                    localStorage.setItem('group_key_{{ group.id }}', data.key);
+                } else {
+                    alert('Ошибка синхронизации: ' + (data.message || 'Неизвестная ошибка'));
+                }
+            })
+            .catch(error => {
+                console.error('Error syncing group keys:', error);
+                alert('Ошибка синхронизации ключей группы');
+            });
+        } else {
+            alert('Нет ключа группы для синхронизации');
         }
     {% endif %}
 }

@@ -1924,10 +1924,11 @@ def group_management(invite_link):
     # Получаем создателя группы
     creator = db.session.get(User, group.creator_id)
     
-    # Получаем всех участников группы
+    # Получаем всех участников группы через GroupMember
     members = []
-    for member in group.members:
-        user = db.session.get(User, member.user_id)
+    group_members = GroupMember.query.filter_by(group_id=group.id).all()
+    for gm in group_members:
+        user = db.session.get(User, gm.user_id)
         if user:
             members.append(user)
     

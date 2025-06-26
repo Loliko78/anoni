@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Групповой чат: {{ group.name }}{% endblock %}
+{% block title %}Групповой чат: {{ group.name_enc.decode('utf-8') if group.name_enc else 'Unknown Group' }}{% endblock %}
 
 {% block content %}
 <style>
@@ -37,7 +37,7 @@ input[type="radio"]:checked + .avatar-choice-img { border-color: var(--main-acce
             <div class="chat-header-avatar">
                 <img src="{{ url_for('static', filename=group.avatar or 'avatars/hacker.svg') }}" alt="avatar" class="chat-header-avatar-img">
             </div>
-            <h2>Группа: {{ group.name }}</h2>
+            <h2>Группа: {{ group.name_enc.decode('utf-8') if group.name_enc else 'Unknown Group' }}</h2>
             <div class="key-info">
                 {% if current_user.id == group.creator_id %}
                 <a href="{{ url_for('group_management', invite_link=invite_link) }}" class="btn btn-primary">Управление группой</a>

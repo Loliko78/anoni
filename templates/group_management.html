@@ -9,8 +9,8 @@
             <h2 class="glitch-text" data-text="УПРАВЛЕНИЕ ГРУППОЙ">УПРАВЛЕНИЕ ГРУППОЙ</h2>
             <div class="group-info">
                 <img src="{{ url_for('static', filename=group.avatar or 'avatars/hacker.svg') }}" alt="group avatar" class="group-avatar">
-                <h3>{{ group.name }}</h3>
-                <p>Создатель: {{ group.creator.nickname_enc }}</p>
+                <h3>{{ group.name_enc.decode('utf-8') if group.name_enc else 'Unknown Group' }}</h3>
+                <p>Создатель: {{ creator.nickname_enc if creator else 'Unknown' }}</p>
             </div>
         </div>
         
