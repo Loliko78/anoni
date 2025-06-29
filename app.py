@@ -22,7 +22,18 @@ from flask_cors import CORS
 app = Flask(__name__, instance_relative_config=True)
 CORS(app, resources={r"/*": {"origins": "*"}})
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(32).hex())
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///harvest.db'
+
+# Настройка базы данных - используем PostgreSQL на Render, SQLite локально
+database_url = os.environ.get('DATABASE_URL')
+if database_url:
+    # На Render - используем PostgreSQL
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    # Локально - используем SQLite
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///harvest.db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')
 
