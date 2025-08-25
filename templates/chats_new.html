@@ -1,0 +1,78 @@
+{% extends "base_new.html" %}
+
+{% block title %}Чаты - Harvestano{% endblock %}
+
+{% block content %}
+<div class="chats-container">
+    <h1 class="mb-3">Ваши чаты</h1>
+    
+    {% if chat_list or group_list or channel_list %}
+    <div class="chats-list">
+        <!-- Personal Chats -->
+        {% for chat_info in chat_list %}
+        <a href="{{ url_for('chat', chat_id=chat_info.chat.id) }}" class="chat-tile">
+            <div class="chat-avatar">
+                {{ chat_info.other_user_nickname[0].upper() }}
+            </div>
+            <div class="chat-info">
+                <div class="chat-nick">{{ chat_info.other_user_nickname }}</div>
+                <div class="chat-last">Личный чат</div>
+            </div>
+            <div class="chat-meta">
+                {% if chat_info.unread_count > 0 %}
+                <div class="unread-indicator"></div>
+                {% endif %}
+                <div class="chat-time">
+                    {{ chat_info.last_activity.strftime('%H:%M') if chat_info.last_activity else '' }}
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+
+        <!-- Group Chats -->
+        {% for group in group_list %}
+        <a href="{{ url_for('group_chat', invite_link=group.invite_link) }}" class="chat-tile">
+            <div class="chat-avatar" style="background: var(--success);">
+                G
+            </div>
+            <div class="chat-info">
+                <div class="chat-nick">{{ group.group_name }}</div>
+                <div class="chat-last">Групповой чат</div>
+            </div>
+            <div class="chat-meta">
+                <div class="chat-time">Группа</div>
+            </div>
+        </a>
+        {% endfor %}
+
+        <!-- Channels -->
+        {% for channel in channel_list %}
+        <a href="{{ url_for('view_channel', channel_id=channel.id) }}" class="chat-tile">
+            <div class="chat-avatar" style="background: var(--warning);">
+                #
+            </div>
+            <div class="chat-info">
+                <div class="chat-nick">{{ channel.name }}</div>
+                <div class="chat-last">{{ channel.description or 'Канал' }}</div>
+            </div>
+            <div class="chat-meta">
+                <div class="chat-time">Канал</div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center p-3" style="background: var(--bg-secondary); border-radius: var(--radius);">
+        <h3 class="mb-2">У вас пока нет чатов</h3>
+        <p class="mb-3" style="color: var(--text-secondary);">
+            Начните общение, найдя пользователей или создав группу
+        </p>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <a href="{{ url_for('search') }}" class="btn">Найти пользователей</a>
+            <a href="{{ url_for('create_group') }}" class="btn btn-secondary">Создать группу</a>
+            <a href="{{ url_for('create_channel') }}" class="btn btn-secondary">Создать канал</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,370 @@
+{% extends "base_minimal.html" %}
+
+{% block title %}Админ панель - Harvest{% endblock %}
+
+{% block head %}
+<style>
+    .admin-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .admin-title {
+        font-size: 2rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .admin-subtitle {
+        color: var(--text-dim);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .stat-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 600;
+        color: var(--accent);
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        color: var(--text-dim);
+        font-size: 0.9rem;
+    }
+
+    .users-section {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .section-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .search-box {
+        position: relative;
+        width: 300px;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 0.5rem 0.75rem 0.5rem 2.5rem;
+        font-size: 0.9rem;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-dim);
+    }
+
+    .users-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .users-table th {
+        background: var(--bg);
+        padding: 1rem;
+        text-align: left;
+        font-weight: 500;
+        color: var(--text-dim);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .users-table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .users-table tr:hover {
+        background: rgba(0, 255, 65, 0.05);
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+
+    .user-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .status-admin {
+        background: rgba(255, 215, 0, 0.2);
+        color: #ffd700;
+    }
+
+    .status-user {
+        background: rgba(0, 255, 65, 0.2);
+        color: var(--accent);
+    }
+
+    .status-banned {
+        background: rgba(255, 68, 68, 0.2);
+        color: var(--danger);
+    }
+
+    .status-open {
+        background: rgba(255, 215, 0, 0.2);
+        color: #ffd700;
+    }
+
+    .status-in_progress {
+        background: rgba(0, 123, 255, 0.2);
+        color: #007bff;
+    }
+
+    .status-closed {
+        background: rgba(40, 167, 69, 0.2);
+        color: #28a745;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-sm {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+    }
+
+    @media (max-width: 768px) {
+        .search-box {
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .section-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .users-table {
+            font-size: 0.9rem;
+        }
+
+        .users-table th,
+        .users-table td {
+            padding: 0.75rem 0.5rem;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <div class="admin-title">⚡ Админ панель</div>
+    <div class="admin-subtitle">Управление пользователями и системой</div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-number">{{ users|length }}</div>
+        <div class="stat-label">Пользователи</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">🚫</div>
+        <div class="stat-number">{{ users|selectattr('banned', 'equalto', true)|list|length }}</div>
+        <div class="stat-label">Заблокированные</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">👑</div>
+        <div class="stat-number">{{ users|selectattr('is_admin', 'equalto', true)|list|length }}</div>
+        <div class="stat-label">Администраторы</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">💬</div>
+        <div class="stat-number">0</div>
+        <div class="stat-label">Активные чаты</div>
+    </div>
+</div>
+
+<div class="users-section">
+    <div class="section-header">
+        <div class="section-title">Управление пользователями</div>
+        <div class="search-box">
+            <input type="text" id="userSearch" placeholder="Поиск пользователей..." class="search-input">
+            <span class="search-icon">🔍</span>
+        </div>
+    </div>
+
+    <table class="users-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Пользователь</th>
+                <th>Статус</th>
+                <th>Дата регистрации</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr class="user-row" data-user-id="{{ user.id }}">
+                <td>{{ user.id }}</td>
+                <td>
+                    <div class="user-info">
+                        <div class="user-avatar">
+                            {% if user.avatar %}
+                                <img src="{{ url_for('static', filename=user.avatar) }}" alt="Аватар">
+                            {% else %}
+                                {{ user.nickname_enc[0].upper() }}
+                            {% endif %}
+                        </div>
+                        <span>{{ user.nickname_enc }}</span>
+                    </div>
+                </td>
+                <td>
+                    <span class="status-badge status-{{ 'admin' if user.is_admin else 'banned' if user.banned else 'user' }}">
+                        {% if user.is_admin %}👑 Админ{% elif user.banned %}🚫 Заблокирован{% else %}👤 Пользователь{% endif %}
+                    </span>
+                </td>
+                <td>Неизвестно</td>
+                <td>
+                    <div class="action-buttons">
+                        {% if current_user.nickname_enc == 'azazel' and user.nickname_enc != 'azazel' %}
+                        <form method="POST" action="{{ url_for('admin_promote', user_id=user.id) }}" style="display: inline;">
+                            <button type="submit" class="btn btn-sm {{ 'btn-primary' if not user.is_admin else 'btn-secondary' }}" 
+                                    onclick="return confirm('{{ 'Назначить админом' if not user.is_admin else 'Снять админку' }} {{ user.nickname_enc }}?')">
+                                {% if not user.is_admin %}👑 Админ{% else %}❌ Снять{% endif %}
+                            </button>
+                        </form>
+                        {% endif %}
+                        <form method="POST" action="{{ url_for('admin_ban', user_id=user.id) }}" style="display: inline;">
+                            <button type="submit" class="btn btn-sm {{ 'btn-primary' if user.banned else 'btn-danger' }}" 
+                                    onclick="return confirm('{{ 'Разблокировать' if user.banned else 'Заблокировать' }} пользователя {{ user.nickname_enc }}?')">
+                                {% if user.banned %}✅ Разблокировать{% else %}🚫 Заблокировать{% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="users-section" style="margin-top: 2rem;">
+    <div class="section-header">
+        <div class="section-title">Тикеты поддержки</div>
+    </div>
+    
+    <table class="users-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Пользователь</th>
+                <th>Тема</th>
+                <th>Статус</th>
+                <th>Дата</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticket in tickets %}
+            <tr style="cursor: pointer;" onclick="window.location.href='{{ url_for('view_ticket', ticket_id=ticket.id) }}'">
+                <td>{{ ticket.id }}</td>
+                <td>{{ ticket.user_nickname }}</td>
+                <td>{{ ticket.subject }}</td>
+                <td>
+                    <span class="status-badge status-{{ ticket.status }}">
+                        {% if ticket.status == 'open' %}🟡 Открыт
+                        {% elif ticket.status == 'in_progress' %}🔵 В работе
+                        {% elif ticket.status == 'closed' %}🟢 Закрыт
+                        {% else %}{{ ticket.status }}{% endif %}
+                    </span>
+                </td>
+                <td>{{ ticket.created_at.strftime('%d.%m.%Y') if ticket.created_at else 'Неизвестно' }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-dim);">Нет тикетов</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+// Поиск пользователей
+document.getElementById('userSearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('.user-row');
+    
+    rows.forEach(row => {
+        const nickname = row.querySelector('.user-info span').textContent.toLowerCase();
+        const id = row.querySelector('td:first-child').textContent;
+        
+        if (nickname.includes(searchTerm) || id.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

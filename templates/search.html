@@ -1,0 +1,456 @@
+{% extends "base.html" %}
+
+{% block title %}Поиск пользователей{% endblock %}
+
+{% block content %}
+<div class="search-container">
+    <div class="search-header">
+        <h2>🔍 Поиск пользователей</h2>
+        <a href="{{ url_for('index') }}" class="btn btn-back">← Назад</a>
+    </div>
+    
+    <div class="search-form-container">
+        <form method="POST" class="search-form">
+            <div class="search-input-group">
+                <input 
+                    type="text" 
+                    name="query" 
+                    value="{{ query or '' }}" 
+                    placeholder="Введите никнейм пользователя..." 
+                    class="search-input"
+                    required
+                    autofocus
+                >
+                <button type="submit" class="btn btn-search">🔍 Найти</button>
+            </div>
+        </form>
+    </div>
+    
+    {% if query %}
+    <div class="search-results">
+        <h3>Результаты поиска для "{{ query }}"</h3>
+        
+        {% if users %}
+        <div class="users-grid">
+            {% for user in users %}
+            <div class="user-card">
+                <div class="user-avatar">
+                    {% if user.avatar %}
+                        <img src="{{ url_for('static', filename=user.avatar) }}" alt="Аватар">
+                    {% else %}
+                        <div class="default-avatar">
+                            <span>{{ user.nickname_enc[0].upper() }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="user-info">
+                    <h4>{{ user.nickname_enc }}</h4>
+                    <p class="user-status">
+                        {% if user.is_online %}
+                            🟢 В сети
+                        {% else %}
+                            ⚪ Не в сети
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="user-actions">
+                    <button class="btn btn-primary" onclick="startChat({{ user.id }})">
+                        💬 Написать
+                    </button>
+                    <button class="btn btn-secondary" onclick="viewProfile({{ user.id }})">
+                        👤 Профиль
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-results">
+            <div class="no-results-icon">🔍</div>
+            <h4>Пользователи не найдены</h4>
+            <p>Попробуйте изменить поисковый запрос</p>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="search-tips">
+        <h3>💡 Советы по поиску</h3>
+        <ul>
+            <li>Введите точный никнейм пользователя</li>
+            <li>Поиск не чувствителен к регистру</li>
+            <li>Можно искать по части никнейма</li>
+            <li>Показываются только активные пользователи</li>
+        </ul>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.search-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+}
+
+.search-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--accent-color);
+}
+
+.search-header h2 {
+    margin: 0;
+    color: var(--accent-color);
+    font-size: 1.5em;
+    text-shadow: 0 0 10px var(--accent-color);
+}
+
+.btn-back {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--accent-color);
+    padding: 8px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-back:hover {
+    background: var(--accent-color);
+    color: var(--bg-primary);
+}
+
+.search-form-container {
+    margin-bottom: 30px;
+}
+
+.search-form {
+    display: flex;
+    gap: 10px;
+}
+
+.search-input-group {
+    display: flex;
+    flex: 1;
+    gap: 10px;
+}
+
+.search-input {
+    flex: 1;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-color);
+    border-radius: 25px;
+    padding: 12px 20px;
+    color: var(--text-primary);
+    font-size: 1em;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+}
+
+.search-input::placeholder {
+    color: var(--text-muted);
+}
+
+.btn-search {
+    background: var(--accent-color);
+    color: var(--bg-primary);
+    border: none;
+    padding: 12px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.btn-search:hover {
+    background: var(--accent-hover);
+    box-shadow: var(--shadow);
+}
+
+.search-results h3 {
+    color: var(--accent-color);
+    margin-bottom: 20px;
+    font-size: 1.3em;
+}
+
+.users-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.user-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: all 0.3s ease;
+}
+
+.user-card:hover {
+    border-color: var(--accent-color);
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+}
+
+.user-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid var(--accent-color);
+    flex-shrink: 0;
+}
+
+.user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.default-avatar {
+    width: 100%;
+    height: 100%;
+    background: var(--accent-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bg-primary);
+    font-weight: bold;
+    font-size: 1.5em;
+}
+
+.user-info {
+    flex: 1;
+}
+
+.user-info h4 {
+    margin: 0 0 5px 0;
+    color: var(--text-primary);
+    font-size: 1.1em;
+}
+
+.user-status {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9em;
+}
+
+.user-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: var(--accent-color);
+    color: var(--bg-primary);
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: var(--accent-hover);
+    box-shadow: var(--shadow);
+}
+
+.btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: var(--accent-color);
+    color: var(--bg-primary);
+    border-color: var(--accent-color);
+}
+
+.no-results {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.no-results-icon {
+    font-size: 4em;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.no-results h4 {
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    font-size: 1.2em;
+}
+
+.no-results p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.search-tips {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 25px;
+}
+
+.search-tips h3 {
+    color: var(--accent-color);
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+.search-tips ul {
+    color: var(--text-secondary);
+    margin: 0;
+    padding-left: 20px;
+}
+
+.search-tips li {
+    margin-bottom: 8px;
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+    .search-container {
+        margin: 10px;
+        padding: 15px;
+    }
+    
+    .search-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .search-header h2 {
+        font-size: 1.3em;
+    }
+    
+    .search-form {
+        flex-direction: column;
+    }
+    
+    .search-input-group {
+        flex-direction: column;
+    }
+    
+    .users-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .user-card {
+        padding: 15px;
+        gap: 12px;
+    }
+    
+    .user-avatar {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .user-info h4 {
+        font-size: 1em;
+    }
+    
+    .user-actions {
+        gap: 6px;
+    }
+    
+    .btn-primary, .btn-secondary {
+        padding: 6px 12px;
+        font-size: 0.8em;
+    }
+}
+
+@media (max-width: 480px) {
+    .search-container {
+        margin: 5px;
+        padding: 10px;
+    }
+    
+    .search-header h2 {
+        font-size: 1.1em;
+    }
+    
+    .search-input {
+        padding: 10px 15px;
+        font-size: 0.9em;
+    }
+    
+    .btn-search {
+        padding: 10px 15px;
+        font-size: 0.9em;
+    }
+    
+    .user-card {
+        padding: 12px;
+        gap: 10px;
+    }
+    
+    .user-avatar {
+        width: 45px;
+        height: 45px;
+    }
+    
+    .default-avatar {
+        font-size: 1.3em;
+    }
+}
+</style>
+
+<script>
+function startChat(userId) {
+    // Создаем или находим существующий чат
+    fetch('/api/start_chat', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_id: userId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = `/chat/${data.chat_id}`;
+        } else {
+            alert('Ошибка создания чата: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        alert('Ошибка создания чата');
+    });
+}
+
+function viewProfile(userId) {
+    window.location.href = `/profile/${userId}`;
+}
+</script>
+{% endblock %} 

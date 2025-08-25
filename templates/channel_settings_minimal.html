@@ -1,0 +1,173 @@
+{% extends "base_minimal.html" %}
+
+{% block title %}Настройки канала - {{ channel.name }}{% endblock %}
+
+{% block head %}
+<style>
+    .settings-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .settings-section {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        color: var(--text);
+    }
+
+    .channel-avatar-section {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .channel-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: #4ecdc4;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        font-weight: 600;
+        margin: 0 auto 1rem;
+    }
+
+    .channel-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .subscribers-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .subscriber-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+    }
+
+    .subscriber-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .subscriber-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+
+    .subscriber-name {
+        font-weight: 500;
+    }
+
+    .actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <div class="settings-section">
+        <div class="section-title">Основные настройки</div>
+        
+        <form method="POST" enctype="multipart/form-data">
+            <div class="channel-avatar-section">
+                <div class="channel-avatar">
+                    {% if channel.avatar %}
+                        <img src="{{ url_for('static', filename=channel.avatar) }}" alt="Аватар канала">
+                    {% else %}
+                        {{ channel.name[0].upper() if channel.name else 'C' }}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="avatar">Изменить аватар</label>
+                    <input type="file" name="avatar" id="avatar" accept="image/*">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="name">Название канала</label>
+                <input type="text" id="name" name="name" value="{{ channel.name }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Описание</label>
+                <textarea id="description" name="description" rows="3">{{ channel.description or '' }}</textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+        </form>
+    </div>
+
+    <div class="settings-section">
+        <div class="section-title">Подписчики ({{ subscribers|length }})</div>
+        <div class="subscribers-list">
+            {% for subscriber in subscribers %}
+            <div class="subscriber-item">
+                <div class="subscriber-info">
+                    <div class="subscriber-avatar">
+                        {% if subscriber.user.avatar %}
+                            <img src="{{ url_for('static', filename=subscriber.user.avatar) }}" alt="Аватар">
+                        {% else %}
+                            {{ subscriber.user.nickname_enc[0].upper() }}
+                        {% endif %}
+                    </div>
+                    <div>
+                        <div class="subscriber-name">{{ subscriber.user.nickname_enc }}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-dim);">
+                            Подписался {{ subscriber.subscribed_at.strftime('%d.%m.%Y') }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="subscriber-item">
+                <div style="text-align: center; color: var(--text-dim); width: 100%;">
+                    Пока нет подписчиков
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="actions">
+        <a href="{{ url_for('view_channel', channel_id=channel.id) }}" class="btn">← Назад к каналу</a>
+        <form method="POST" action="{{ url_for('delete_channel', channel_id=channel.id) }}" style="display: inline;">
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Удалить канал? Это действие нельзя отменить!')">Удалить канал</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

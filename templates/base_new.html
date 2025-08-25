@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Harvestano{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_new.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='avatars/harvest_favicon.svg') }}">
+</head>
+<body {% if request.endpoint in ['chat', 'group_chat'] %}class="chat-page"{% endif %}>
+    <div class="page-container">
+        {% if not (request.endpoint in ['chat', 'group_chat']) %}
+        <header>
+            <div class="logo">
+                <svg width="200" height="40" viewBox="0 0 200 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="1" width="198" height="38" rx="8" fill="#1a1a1a" stroke="#4a9eff" stroke-width="1"/>
+                    <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" 
+                          font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" 
+                          fill="#4a9eff">Harvestano</text>
+                </svg>
+            </div>
+            <nav>
+                <a href="{{ url_for('index') }}">Чаты</a>
+                <a href="{{ url_for('search') }}">Поиск</a>
+                <a href="{{ url_for('create_group') }}">Группы</a>
+                <a href="{{ url_for('create_channel') }}">Каналы</a>
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('profile') }}">Профиль</a>
+                {% endif %}
+                {% if current_user.is_authenticated and current_user.is_admin %}
+                <a href="{{ url_for('admin_panel') }}">Админ</a>
+                {% endif %}
+                <a href="{{ url_for('logout') }}">Выход</a>
+            </nav>
+        </header>
+        {% endif %}
+
+        <main class="content-wrapper">
+            {% block content %}{% endblock %}
+        </main>
+
+        {% if not (request.endpoint in ['chat', 'group_chat']) %}
+        <div class="footer-text">
+            <p>Harvestano - Анонимный мессенджер</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toast" class="toast"></div>
+    
+    <!-- Modal System -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-title" id="modal-title"></div>
+            <div class="modal-message" id="modal-message"></div>
+            <input type="text" id="modal-input" class="modal-input" style="display: none;">
+            <div class="modal-buttons" id="modal-buttons"></div>
+        </div>
+    </div>
+
+    <script>
+        // Flash messages handling
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        document.addEventListener('DOMContentLoaded', function() {
+            const toast = document.getElementById('toast');
+            const messages = {{ messages|tojson }};
+            
+            messages.forEach(function(msg, index) {
+                setTimeout(function() {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'toast-message toast-' + msg[0];
+                    messageDiv.textContent = msg[1];
+                    toast.appendChild(messageDiv);
+                    toast.classList.add('show');
+                    
+                    setTimeout(function() {
+                        toast.classList.remove('show');
+                        setTimeout(function() {
+                            toast.innerHTML = '';
+                        }, 300);
+                    }, 4000);
+                }, index * 100);
+            });
+        });
+        {% endif %}
+        {% endwith %}
+
+        // Modal System
+        class ModalSystem {
+            constructor() {
+                this.overlay = document.getElementById('modal-overlay');
+                this.title = document.getElementById('modal-title');
+                this.message = document.getElementById('modal-message');
+                this.input = document.getElementById('modal-input');
+                this.buttons = document.getElementById('modal-buttons');
+                this.resolve = null;
+                this.reject = null;
+            }
+
+            show(title, message, options = {}) {
+                return new Promise((resolve, reject) => {
+                    this.resolve = resolve;
+                    this.reject = reject;
+                    
+                    this.title.textContent = title;
+                    this.message.textContent = message;
+                    
+                    // Show/hide input
+                    if (options.showInput) {
+                        this.input.style.display = 'block';
+                        this.input.value = options.defaultValue || '';
+                        setTimeout(() => this.input.focus(), 100);
+                    } else {
+                        this.input.style.display = 'none';
+                    }
+                    
+                    // Create buttons
+                    this.buttons.innerHTML = '';
+                    
+                    if (options.type === 'confirm') {
+                        this.createButton('Отмена', 'modal-btn', () => this.resolve(false));
+                        this.createButton('OK', 'modal-btn primary', () => {
+                            if (options.showInput) {
+                                this.resolve(this.input.value);
+                            } else {
+                                this.resolve(true);
+                            }
+                        });
+                    } else if (options.type === 'prompt') {
+                        this.createButton('Отмена', 'modal-btn', () => this.resolve(null));
+                        this.createButton('OK', 'modal-btn primary', () => this.resolve(this.input.value));
+                    } else {
+                        this.createButton('OK', 'modal-btn primary', () => this.resolve());
+                    }
+                    
+                    this.overlay.classList.add('show');
+                });
+            }
+
+            createButton(text, className, onClick) {
+                const button = document.createElement('button');
+                button.textContent = text;
+                button.className = className;
+                button.addEventListener('click', () => {
+                    onClick();
+                    this.hide();
+                });
+                this.buttons.appendChild(button);
+            }
+
+            hide() {
+                this.overlay.classList.remove('show');
+            }
+        }
+
+        // Initialize modal system
+        const modalSystem = new ModalSystem();
+
+        // Override native alert, confirm, prompt
+        window.alert = function(message) {
+            return modalSystem.show('Уведомление', message);
+        };
+
+        window.confirm = function(message) {
+            return modalSystem.show('Подтверждение', message, { type: 'confirm' });
+        };
+
+        window.prompt = function(message, defaultValue = '') {
+            return modalSystem.show('Ввод', message, { 
+                type: 'prompt', 
+                showInput: true, 
+                defaultValue: defaultValue 
+            });
+        };
+
+        // Close modal on overlay click
+        document.getElementById('modal-overlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                modalSystem.hide();
+                if (modalSystem.reject) {
+                    modalSystem.reject();
+                }
+            }
+        });
+
+        // Handle Enter key for input
+        document.getElementById('modal-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const okButton = document.querySelector('.modal-btn.primary');
+                if (okButton) {
+                    okButton.click();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

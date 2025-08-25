@@ -1,0 +1,45 @@
+{% extends "base_new.html" %}
+
+{% block title %}Ошибка {{ error_code }} - Harvestano{% endblock %}
+
+{% block content %}
+<div class="error-container text-center">
+    <div style="background: var(--bg-secondary); padding: 3rem; border-radius: var(--radius); max-width: 600px; margin: 0 auto;">
+        <div style="font-size: 4rem; color: var(--error); margin-bottom: 1rem;">
+            {{ error_code }}
+        </div>
+        
+        <h1 style="color: var(--error); margin-bottom: 1rem;">
+            {{ error_title }}
+        </h1>
+        
+        <p style="color: var(--text-secondary); margin-bottom: 2rem; line-height: 1.6;">
+            {{ error_message }}
+        </p>
+        
+        {% if error_details and config.DEBUG %}
+        <details style="text-align: left; background: var(--bg-primary); padding: 1rem; border-radius: var(--radius); margin-bottom: 2rem;">
+            <summary style="cursor: pointer; color: var(--accent); margin-bottom: 1rem;">
+                Детали ошибки (режим отладки)
+            </summary>
+            <pre style="color: var(--text-muted); font-size: 12px; overflow-x: auto;">{{ error_details }}</pre>
+        </details>
+        {% endif %}
+        
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <a href="{{ url_for('index') }}" class="btn">На главную</a>
+            <button onclick="history.back()" class="btn btn-secondary">Назад</button>
+            <button onclick="location.reload()" class="btn btn-secondary">Обновить</button>
+        </div>
+        
+        {% if timestamp %}
+        <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 12px;">
+            Время: {{ timestamp }}
+            {% if request_id and request_id != 'N/A' %}
+            <br>ID запроса: {{ request_id }}
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

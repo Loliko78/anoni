@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Настройки канала: {{ channel.name }}{% endblock %}
+
+{% block content %}
+<div class="channel-settings-page">
+    <div class="channel-settings-container">
+        <h2 class="glitch-text" data-text="НАСТРОЙКИ КАНАЛА">НАСТРОЙКИ КАНАЛА</h2>
+        <div class="channel-settings-avatar-block">
+            <img src="{{ url_for('static', filename=channel.avatar or 'avatars/channel_1.png') }}" alt="avatar" class="channel-settings-avatar">
+            <form method="POST" enctype="multipart/form-data" style="margin-top:1em;">
+                <input type="file" name="avatar_upload" accept="image/*" required>
+                <button type="submit" class="btn btn-primary">Сменить аватарку</button>
+            </form>
+        </div>
+        <form method="POST" style="margin-top:2em;">
+            <label for="new_name">Название канала:</label>
+            <input type="text" name="new_name" id="new_name" value="{{ channel.name }}" class="input-field" style="width:100%;margin-bottom:1em;">
+            <button type="submit" class="btn btn-primary">Сохранить название</button>
+        </form>
+        <div class="channel-settings-members" style="margin-top:2em;">
+            <h4>Участники канала:</h4>
+            <ul style="list-style:none;padding:0;">
+                {% for member in members %}
+                <li style="margin-bottom:0.7em;display:flex;align-items:center;gap:1em;">
+                    <span>{{ member.nickname_enc }}</span>
+                    {% if member.id != channel.creator_id %}
+                    <form method="POST" style="display:inline;" onsubmit="return confirm('Исключить участника?');">
+                        <input type="hidden" name="kick_user_id" value="{{ member.id }}">
+                        <button type="submit" class="btn btn-danger">Кикнуть</button>
+                    </form>
+                    {% else %}
+                    <span style="color:var(--main-accent-color);font-size:0.9em;">Владелец</span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div style="margin-top:2em;">
+            <a href="{{ url_for('view_channel', channel_id=channel.id) }}" class="btn btn-secondary">Назад к каналу</a>
+        </div>
+    </div>
+</div>
+<style>
+.channel-settings-page {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 80vh;
+    padding: 2rem;
+}
+.channel-settings-container {
+    background: var(--bg-primary);
+    border: 1px solid var(--main-accent-color);
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+    border-radius: 10px;
+    padding: 2.5rem;
+    max-width: 500px;
+    width: 100%;
+}
+.channel-settings-avatar-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5em;
+}
+.channel-settings-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 3px solid var(--main-accent-color);
+    box-shadow: 0 0 16px var(--main-accent-color);
+    object-fit: cover;
+}
+.btn {
+    background: var(--main-accent-color);
+    color: var(--background-color);
+    border: none;
+    padding: 10px 20px;
+    font-family: var(--font-main);
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    border-radius: 5px;
+    text-decoration: none;
+    display: inline-block;
+}
+.btn.btn-primary {
+    background: var(--main-accent-color);
+}
+.btn.btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+.btn.btn-danger {
+    background: var(--error-color);
+    color: var(--text-primary);
+}
+.input-field {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 12px;
+    font-family: var(--font-main);
+    font-size: 1em;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+.input-field:focus {
+    outline: none;
+    border-color: var(--main-accent-color);
+    box-shadow: 0 0 10px var(--main-accent-color);
+}
+</style>
+{% endblock %} 

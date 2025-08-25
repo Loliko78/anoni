@@ -1,0 +1,643 @@
+{% extends "base_minimal.html" %}
+
+{% block title %}{{ group.name }} - Harvest{% endblock %}
+
+{% block head %}
+<style>
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 160px);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .chat-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg);
+    }
+
+    .group-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .group-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #ff6b6b;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+
+    .group-name {
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .group-members {
+        color: var(--text-dim);
+        font-size: 0.9rem;
+    }
+
+    .chat-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .messages-container {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .message {
+        display: flex;
+        max-width: 70%;
+    }
+
+    .message.sent {
+        align-self: flex-end;
+        flex-direction: row-reverse;
+    }
+
+    .message.received {
+        align-self: flex-start;
+    }
+
+    .message-content {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        position: relative;
+        word-wrap: break-word;
+    }
+
+    .message.sent .message-content {
+        background: var(--accent);
+        color: var(--bg);
+        border-color: var(--accent);
+    }
+
+    .message-sender {
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        color: #4ecdc4;
+    }
+
+    .message.sent .message-sender {
+        color: var(--bg);
+    }
+
+    .message-text {
+        margin-bottom: 0.25rem;
+        line-height: 1.4;
+        white-space: pre-wrap;
+    }
+
+    .message-time {
+        font-size: 0.75rem;
+        opacity: 0.7;
+        text-align: right;
+    }
+
+    .message.sent .message-time {
+        color: var(--bg);
+    }
+
+    .chat-input-container {
+        padding: 1rem;
+        border-top: 1px solid var(--border);
+        background: var(--bg);
+    }
+
+    .chat-input-form {
+        display: flex;
+        gap: 0.5rem;
+        align-items: flex-end;
+    }
+
+    .chat-input {
+        flex: 1;
+        min-height: 40px;
+        max-height: 120px;
+        padding: 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        background: var(--surface);
+        color: var(--text);
+        resize: none;
+        font-family: inherit;
+    }
+
+    .chat-input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(0, 255, 65, 0.1);
+    }
+
+    .send-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: var(--bg);
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        transition: all 0.2s;
+    }
+
+    .send-btn:hover {
+        background: var(--accent-dim);
+        transform: scale(1.05);
+    }
+
+    .file-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        transition: all 0.2s;
+    }
+
+    .file-btn:hover {
+        background: var(--accent);
+        color: var(--bg);
+    }
+
+    .message-file {
+        margin-bottom: 0.5rem;
+    }
+
+    .file-link {
+        color: var(--accent);
+        text-decoration: none;
+        padding: 0.5rem;
+        background: rgba(0, 255, 65, 0.1);
+        border-radius: 6px;
+        display: inline-block;
+    }
+
+    .edit-btn, .delete-btn {
+        background: none;
+        border: none;
+        color: var(--text-dim);
+        cursor: pointer;
+        margin-left: 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    .edit-btn:hover, .delete-btn:hover {
+        color: var(--text);
+    }
+
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .modal-content {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 2rem;
+        max-width: 400px;
+        width: 90%;
+    }
+
+    .modal-content h3 {
+        margin-bottom: 1rem;
+        color: var(--text);
+    }
+
+    .modal-content textarea {
+        width: 100%;
+        min-height: 80px;
+        margin-bottom: 1rem;
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+    }
+
+    .empty-chat {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        color: var(--text-dim);
+        text-align: center;
+    }
+
+    .empty-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    @media (max-width: 768px) {
+        .chat-container {
+            height: calc(100vh - 120px);
+        }
+
+        .message {
+            max-width: 85%;
+        }
+
+        .chat-header {
+            padding: 0.75rem;
+        }
+
+        .group-name {
+            font-size: 1rem;
+        }
+
+        .messages-container {
+            padding: 0.75rem;
+        }
+
+        .chat-input-container {
+            padding: 0.75rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="chat-header">
+        <div class="group-info">
+            <div class="group-avatar">
+                {{ group.name[0].upper() if group.name else 'G' }}
+            </div>
+            <div>
+                <div class="group-name">{{ group.name }}</div>
+                <div class="group-members">{{ members|length }} участников</div>
+            </div>
+        </div>
+        <div class="chat-actions">
+            {% if group.creator_id == current_user.id %}
+            <a href="{{ url_for('group_settings', invite_link=group.invite_link) }}" class="btn">⚙️ Настройки</a>
+            {% endif %}
+            <a href="{{ url_for('index') }}" class="btn">← Назад</a>
+        </div>
+    </div>
+
+    <div class="messages-container" id="messages">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="message {{ 'sent' if message.sender_id == current_user.id else 'received' }}">
+                <div class="message-content">
+                    {% if message.sender_id != current_user.id %}
+                    <div class="message-sender">{{ message.sender.nickname_enc }}</div>
+                    {% endif %}
+                    {% if message.file %}
+                    <div class="message-file">
+                        <a href="{{ url_for('download_message_file', file_id=message.file.id) }}" class="file-link">
+                            📁 {{ message.file.original_name }}
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% if message.content_enc %}
+                    <div class="message-text">{{ message.content_enc.decode('utf-8') }}</div>
+                    {% endif %}
+                    <div class="message-time">
+                        {{ message.timestamp.strftime('%H:%M') }}
+                        {% if message.sender_id == current_user.id %}
+                        <button class="edit-btn" onclick="editMessage({{ message.id }})">✏️</button>
+                        <button class="delete-btn" onclick="deleteMessage({{ message.id }})">🗑️</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-chat">
+                <div class="empty-icon">👥</div>
+                <p>Начните общение в группе!</p>
+                <p>Отправьте первое сообщение</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="chat-input-container">
+        <form class="chat-input-form" onsubmit="sendMessage(event)" enctype="multipart/form-data">
+            <input type="file" id="fileInput" style="display: none;" onchange="handleFileSelect(event)">
+            <button type="button" class="file-btn" onclick="document.getElementById('fileInput').click()">📁</button>
+            <textarea 
+                id="messageInput" 
+                class="chat-input" 
+                placeholder="Введите сообщение..." 
+                rows="1"
+                onkeydown="handleKeyDown(event)"
+            ></textarea>
+            <button type="submit" class="send-btn">➤</button>
+        </form>
+        <div id="filePreview" style="display: none; padding: 0.5rem; background: var(--bg); border-radius: 6px; margin-bottom: 0.5rem;">
+            <span id="fileName"></span>
+            <button type="button" onclick="clearFile()" style="margin-left: 0.5rem;">❌</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+<script>
+const socket = io();
+const inviteLink = '{{ group.invite_link }}';
+const currentUserId = {{ current_user.id }};
+const messagesContainer = document.getElementById('messages');
+const messageInput = document.getElementById('messageInput');
+
+// Подключение к группе
+socket.emit('join_group', {invite_link: inviteLink});
+
+// Получение новых сообщений
+socket.on('new_group_message', function(data) {
+    addMessage(data);
+    scrollToBottom();
+    
+    // Уведомление и звук только для чужих сообщений
+    if (data.sender_id !== currentUserId) {
+        showNotification('Новое сообщение в группе', data.content, data.sender);
+        playNotificationSound();
+    }
+});
+
+// Отправка сообщения
+function sendMessage(event) {
+    event.preventDefault();
+    const content = messageInput.value.trim();
+    
+    if (selectedFile) {
+        // Отправка файла
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        
+        fetch('/upload_file', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                socket.emit('send_group_message', {
+                    invite_link: inviteLink,
+                    content: content || '📁 Файл',
+                    file_id: data.file_id
+                });
+                clearFile();
+                messageInput.value = '';
+                adjustTextareaHeight();
+            }
+        });
+    } else if (content) {
+        socket.emit('send_group_message', {
+            invite_link: inviteLink,
+            content: content
+        });
+        messageInput.value = '';
+        adjustTextareaHeight();
+    }
+}
+
+// Добавление сообщения в интерфейс
+function addMessage(data) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${data.sender_id === currentUserId ? 'sent' : 'received'}`;
+    
+    const time = new Date().toLocaleTimeString('ru-RU', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    
+    let senderHtml = '';
+    if (data.sender_id !== currentUserId) {
+        senderHtml = `<div class="message-sender">${data.sender}</div>`;
+    }
+    
+    let fileHtml = '';
+    if (data.file_id) {
+        fileHtml = `<div class="message-file"><a href="/download_file/${data.file_id}" class="file-link">📁 Файл</a></div>`;
+    }
+    
+    let editButtons = '';
+    if (data.sender_id === currentUserId) {
+        editButtons = `
+            <button class="edit-btn" onclick="editMessage(${data.id})">✏️</button>
+            <button class="delete-btn" onclick="deleteMessage(${data.id})">🗑️</button>
+        `;
+    }
+    
+    messageDiv.innerHTML = `
+        <div class="message-content">
+            ${senderHtml}
+            ${fileHtml}
+            ${data.content ? `<div class="message-text">${data.content}</div>` : ''}
+            <div class="message-time">${time} ${editButtons}</div>
+        </div>
+    `;
+    
+    // Удаляем пустое состояние если есть
+    const emptyChat = messagesContainer.querySelector('.empty-chat');
+    if (emptyChat) {
+        emptyChat.remove();
+    }
+    
+    messagesContainer.appendChild(messageDiv);
+}
+
+// Прокрутка к последнему сообщению
+function scrollToBottom() {
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// Обработка Enter для отправки
+function handleKeyDown(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage(event);
+    }
+}
+
+// Автоматическое изменение высоты textarea
+function adjustTextareaHeight() {
+    messageInput.style.height = 'auto';
+    messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+}
+
+messageInput.addEventListener('input', adjustTextareaHeight);
+
+// Прокрутка к последнему сообщению при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    scrollToBottom();
+});
+
+let selectedFile = null;
+
+// Обработка выбора файла
+function handleFileSelect(event) {
+    selectedFile = event.target.files[0];
+    if (selectedFile) {
+        document.getElementById('fileName').textContent = selectedFile.name;
+        document.getElementById('filePreview').style.display = 'block';
+    }
+}
+
+function clearFile() {
+    selectedFile = null;
+    document.getElementById('fileInput').value = '';
+    document.getElementById('filePreview').style.display = 'none';
+}
+
+// Модальные окна для редактирования и удаления
+function editMessage(messageId) {
+    showEditModal(messageId);
+}
+
+function deleteMessage(messageId) {
+    showDeleteModal(messageId);
+}
+
+function showEditModal(messageId) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h3>Редактировать сообщение</h3>
+            <textarea id="editText" placeholder="Введите новый текст..."></textarea>
+            <div class="modal-actions">
+                <button class="btn" onclick="closeModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="saveEdit(${messageId})">Сохранить</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    document.getElementById('editText').focus();
+}
+
+function showDeleteModal(messageId) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h3>Удалить сообщение</h3>
+            <p>Вы уверены, что хотите удалить это сообщение?</p>
+            <div class="modal-actions">
+                <button class="btn" onclick="closeModal()">Отмена</button>
+                <button class="btn btn-danger" onclick="confirmDelete(${messageId})">Удалить</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function saveEdit(messageId) {
+    const newContent = document.getElementById('editText').value.trim();
+    if (newContent) {
+        fetch(`/message/edit/${messageId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `content=${encodeURIComponent(newContent)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка редактирования');
+            }
+        });
+    }
+    closeModal();
+}
+
+function confirmDelete(messageId) {
+    fetch(`/message/delete/${messageId}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Ошибка удаления');
+        }
+    });
+    closeModal();
+}
+
+function closeModal() {
+    const modal = document.querySelector('.modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Уведомления
+function showNotification(title, body, sender) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, {
+            body: `${sender}: ${body}`,
+            icon: '/static/favicon.ico'
+        });
+    }
+}
+
+function playNotificationSound() {
+    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT');
+    audio.volume = 0.3;
+    audio.play().catch(() => {});
+}
+
+// Запрос разрешения на уведомления
+if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+}
+
+// Отключение от группы при уходе со страницы
+window.addEventListener('beforeunload', function() {
+    socket.emit('leave_group', {invite_link: inviteLink});
+});
+</script>
+{% endblock %}

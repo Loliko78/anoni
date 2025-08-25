@@ -1,0 +1,795 @@
+{% extends "base.html" %}
+
+{% block title %}Админ панель{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+<div class="admin-container">
+        <div class="admin-header">
+            <h1>⚡ Админ панель HARVEST</h1>
+            <p>Управление пользователями и системой</p>
+        </div>
+        
+        <!-- Статистика -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-info">
+                    <h3>Пользователи</h3>
+                    <span class="stat-number">{{ users|length }}</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🚫</div>
+                <div class="stat-info">
+                    <h3>Заблокированные</h3>
+                    <span class="stat-number">{{ users|selectattr('banned', 'equalto', true)|list|length }}</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">👑</div>
+                <div class="stat-info">
+                    <h3>Администраторы</h3>
+                    <span class="stat-number">{{ users|selectattr('is_admin', 'equalto', true)|list|length }}</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💬</div>
+                <div class="stat-info">
+                    <h3>Активные чаты</h3>
+                    <span class="stat-number">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Основные секции -->
+        <div class="admin-sections">
+            <!-- Управление пользователями -->
+    <div class="admin-section">
+                <div class="section-header">
+                    <h2>👥 Управление пользователями</h2>
+                    <p>Блокировка и разблокировка пользователей</p>
+                </div>
+                
+                <div class="users-table-container">
+                    <div class="table-header">
+                        <div class="search-box">
+                            <input type="text" id="userSearch" placeholder="Поиск пользователей..." class="search-input">
+                            <span class="search-icon">🔍</span>
+                        </div>
+                        <div class="table-actions">
+                            <button class="btn btn-secondary" onclick="exportUsers()">📥 Экспорт</button>
+                        </div>
+                    </div>
+                    
+        <div class="table-wrapper">
+                        <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                                    <th>Никнейм</th>
+                                    <th>Статус</th>
+                                    <th>Дата регистрации</th>
+                                    <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                                <tr class="user-row {% if user.banned %}banned{% endif %}" data-user-id="{{ user.id }}">
+                        <td>{{ user.id }}</td>
+                                    <td>
+                                        <div class="user-info">
+                                            <div class="user-avatar">
+                                                {% if user.avatar %}
+                                                    <img src="{{ url_for('static', filename=user.avatar) }}" alt="Аватар">
+                                                {% else %}
+                                                    <div class="default-avatar">
+                                                        <span>{{ user.nickname_enc[0].upper() }}</span>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            <span class="user-nickname">{{ user.nickname_enc }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge status-{{ 'admin' if user.is_admin else 'user' }}{% if user.banned %} banned{% endif %}">
+                                            {% if user.is_admin %}👑 Админ{% elif user.banned %}🚫 Заблокирован{% else %}👤 Пользователь{% endif %}
+                                        </span>
+                        </td>
+                                    <td>{{ user.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <form method="POST" action="{{ url_for('admin_ban', user_id=user.id) }}" style="display: inline;">
+                                                <button type="submit" class="btn btn-{{ 'success' if user.banned else 'danger' }}" 
+                                                        onclick="return confirm('{{ 'Разблокировать' if user.banned else 'Заблокировать' }} пользователя {{ user.nickname_enc }}?')">
+                                                    {% if user.banned %}✅ Разблокировать{% else %}🚫 Заблокировать{% endif %}
+                                </button>
+                            </form>
+                                            <button class="btn btn-secondary" onclick="viewUserDetails({{ user.id }})">👁️ Подробности</button>
+    </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+            </div>
+            
+            <!-- Системные действия -->
+            <div class="admin-section">
+                <div class="section-header">
+                    <h2>🔧 Системные действия</h2>
+                    <p>Управление системой и просмотр статистики</p>
+                </div>
+                
+                <div class="system-actions">
+                    <div class="action-card">
+                        <div class="action-icon">🗑️</div>
+                        <div class="action-info">
+                            <h3>Управление чатами</h3>
+                            <p>Удаление чатов и сообщений</p>
+                        </div>
+                        <button class="btn btn-secondary" onclick="showChatManagement()">Управление</button>
+                </div>
+                
+                    <div class="action-card">
+                        <div class="action-icon">👥</div>
+                        <div class="action-info">
+                            <h3>Управление группами</h3>
+                            <p>Удаление групп и участников</p>
+                        </div>
+                        <button class="btn btn-secondary" onclick="showGroupManagement()">Управление</button>
+                </div>
+                
+                    <div class="action-card">
+                        <div class="action-icon">📊</div>
+                        <div class="action-info">
+                            <h3>Статистика</h3>
+                            <p>Просмотр статистики системы</p>
+        </div>
+                        <button class="btn btn-secondary" onclick="showStatistics()">Показать</button>
+    </div>
+
+                    <div class="action-card">
+                        <div class="action-icon">🔒</div>
+                        <div class="action-info">
+                            <h3>Безопасность</h3>
+                            <p>Настройки безопасности системы</p>
+                        </div>
+                        <button class="btn btn-secondary" onclick="showSecuritySettings()">Настройки</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+    
+<!-- Модальное окно деталей пользователя -->
+<div id="userDetailsModal" class="modal">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h3>👤 Детали пользователя</h3>
+            <button class="btn-close" onclick="hideUserDetails()">×</button>
+        </div>
+        <div class="modal-body">
+            <div id="userDetailsContent">
+                <!-- Содержимое будет загружено динамически -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Основной макет */
+.admin-layout {
+    min-height: 100vh;
+    background: var(--bg-primary);
+    padding: 2rem;
+}
+
+    .admin-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Заголовок админ панели */
+.admin-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.admin-header h1 {
+    color: var(--text-primary);
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.admin-header p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+/* Статистика */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.stat-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    background: rgba(0, 255, 65, 0.05);
+    border-color: #00ff41;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 255, 65, 0.1);
+}
+
+.stat-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.stat-info h3 {
+    color: var(--text-secondary);
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.stat-number {
+    color: var(--text-primary);
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+/* Секции админ панели */
+.admin-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+    .admin-section {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.section-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-primary);
+}
+
+.section-header h2 {
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.section-header p {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* Таблица пользователей */
+.users-table-container {
+    padding: 1.5rem;
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    max-width: 300px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+        border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #00ff41;
+    box-shadow: 0 0 0 3px rgba(0, 255, 65, 0.1);
+}
+
+.search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+}
+
+    .table-wrapper {
+        overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    }
+
+.users-table {
+        width: 100%;
+        border-collapse: collapse;
+    background: var(--bg-primary);
+}
+
+.users-table th {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 1rem;
+        text-align: left;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.users-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.users-table tr:hover {
+    background: rgba(0, 255, 65, 0.05);
+}
+
+.user-row.banned {
+    opacity: 0.6;
+    background: rgba(244, 67, 54, 0.1);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.user-avatar {
+    flex-shrink: 0;
+}
+
+.user-avatar img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #00ff41;
+}
+
+.default-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #00ff41, #00cc33);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #000;
+    border: 2px solid #00ff41;
+}
+
+.user-nickname {
+    font-weight: 500;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-admin {
+    background: linear-gradient(135deg, #ffd700, #ffb347);
+    color: #000;
+}
+
+.status-user {
+    background: linear-gradient(135deg, #00ff41, #00cc33);
+        color: #000;
+}
+
+.status-badge.banned {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+    color: #fff;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* Системные действия */
+.system-actions {
+    padding: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.action-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.action-card:hover {
+    background: rgba(0, 255, 65, 0.05);
+    border-color: #00ff41;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 255, 65, 0.1);
+}
+
+.action-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.action-info {
+    flex: 1;
+}
+
+.action-info h3 {
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.action-info p {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* Кнопки */
+.btn {
+    padding: 0.75rem 1.5rem;
+        border: none;
+    border-radius: 8px;
+        cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #00ff41, #00cc33);
+    color: #000;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #00cc33, #009926);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 255, 65, 0.3);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: rgba(0, 255, 65, 0.1);
+    border-color: #00ff41;
+    transform: translateY(-2px);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: #fff;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #45a049, #3d8b40);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+    color: #fff;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #d32f2f, #b71c1c);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(244, 67, 54, 0.3);
+}
+
+/* Модальное окно */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    }
+    
+    .modal-content {
+    background: var(--bg-secondary);
+        margin: 5% auto;
+        border-radius: 12px;
+        width: 90%;
+    max-width: 600px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-primary);
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.btn-close {
+    background: none;
+    border: none;
+        color: var(--text-secondary);
+    font-size: 1.5rem;
+        cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.btn-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+/* Мобильные стили */
+@media (max-width: 768px) {
+    .admin-layout {
+        padding: 1rem;
+    }
+    
+    .admin-header h1 {
+        font-size: 2rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .table-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .search-box {
+        max-width: none;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .system-actions {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .modal-content {
+        margin: 10% auto;
+        width: 95%;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .users-table {
+        font-size: 0.9rem;
+    }
+    
+    .users-table th,
+    .users-table td {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .user-avatar img,
+    .default-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 0.8rem;
+    }
+    }
+</style>
+
+<script>
+// Поиск пользователей
+document.getElementById('userSearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('.user-row');
+    
+    rows.forEach(row => {
+        const nickname = row.querySelector('.user-nickname').textContent.toLowerCase();
+        const id = row.querySelector('td:first-child').textContent;
+        
+        if (nickname.includes(searchTerm) || id.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+// Экспорт пользователей
+function exportUsers() {
+    const rows = document.querySelectorAll('.user-row');
+    let csv = 'ID,Никнейм,Статус,Дата регистрации\n';
+    
+    rows.forEach(row => {
+        const id = row.querySelector('td:first-child').textContent;
+        const nickname = row.querySelector('.user-nickname').textContent;
+        const status = row.querySelector('.status-badge').textContent;
+        const date = row.querySelector('td:nth-child(4)').textContent;
+        
+        csv += `${id},"${nickname}","${status}","${date}"\n`;
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'users_export.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Показать детали пользователя
+function viewUserDetails(userId) {
+    // Здесь можно загрузить детали пользователя через AJAX
+    const modal = document.getElementById('userDetailsModal');
+    const content = document.getElementById('userDetailsContent');
+    
+    content.innerHTML = `
+        <div class="user-details">
+            <h4>Загрузка деталей пользователя...</h4>
+            <p>ID: ${userId}</p>
+        </div>
+    `;
+    
+    modal.style.display = 'block';
+}
+
+// Скрыть детали пользователя
+function hideUserDetails() {
+    document.getElementById('userDetailsModal').style.display = 'none';
+}
+
+// Системные действия
+function showChatManagement() {
+    alert('Функция управления чатами будет добавлена позже');
+}
+
+function showGroupManagement() {
+    alert('Функция управления группами будет добавлена позже');
+}
+
+function showStatistics() {
+    alert('Функция просмотра статистики будет добавлена позже');
+}
+
+function showSecuritySettings() {
+    alert('Функция настроек безопасности будет добавлена позже');
+}
+
+// Закрытие модального окна при клике вне его
+window.addEventListener('click', function(e) {
+    if (e.target.classList.contains('modal')) {
+        e.target.style.display = 'none';
+    }
+});
+
+// Закрытие модального окна по Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.style.display = 'none';
+        });
+    }
+});
+
+// Анимация появления элементов
+document.addEventListener('DOMContentLoaded', function() {
+    const statCards = document.querySelectorAll('.stat-card');
+    const actionCards = document.querySelectorAll('.action-card');
+    
+    statCards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+    
+    actionCards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, (index + statCards.length) * 100);
+    });
+});
+</script>
+{% endblock %} 

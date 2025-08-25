@@ -1,0 +1,556 @@
+/* Мобильные стили для HARVEST */
+
+/* Основные переменные для мобильных */
+:root {
+    --mobile-bg-primary: #0a0a0a;
+    --mobile-bg-secondary: #1a1a1a;
+    --mobile-bg-tertiary: #2a2a2a;
+    --mobile-accent-color: #00ff00;
+    --mobile-accent-hover: #00cc00;
+    --mobile-text-primary: #ffffff;
+    --mobile-text-secondary: #cccccc;
+    --mobile-text-muted: #888888;
+    --mobile-border-color: #333333;
+    --mobile-shadow: 0 2px 10px rgba(0, 255, 0, 0.2);
+    --mobile-shadow-hover: 0 4px 15px rgba(0, 255, 0, 0.3);
+}
+
+/* Общие мобильные стили */
+@media (max-width: 768px) {
+    body {
+        margin: 0;
+        padding: 0;
+        background: var(--mobile-bg-primary);
+        color: var(--mobile-text-primary);
+        font-family: 'Courier New', monospace;
+        overflow-x: hidden;
+        height: 100vh;
+        width: 100vw;
+    }
+    
+    /* Убираем скролл на мобильных */
+    .main-container {
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* Исправляем карту на главной странице */
+    .welcome-card {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1000;
+        background: var(--mobile-bg-primary);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+    
+    .welcome-card h1 {
+        font-size: 1.5em;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+    
+    .welcome-card p {
+        font-size: 0.9em;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    /* Скрываем карту при открытии чатов */
+    .welcome-card.hidden {
+        display: none;
+    }
+    
+    /* Стили для чатов на мобильных */
+    .chats-layout {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: var(--mobile-bg-primary);
+    }
+    
+    .chats-sidebar {
+        width: 100%;
+        height: 100%;
+        background: var(--mobile-bg-secondary);
+        border: none;
+        border-radius: 0;
+    }
+    
+    .sidebar-header {
+        padding: 15px;
+        background: var(--mobile-bg-tertiary);
+        border-bottom: 2px solid var(--mobile-accent-color);
+    }
+    
+    .sidebar-header h2 {
+        font-size: 1.2em;
+        margin: 0;
+    }
+    
+    .header-actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .btn {
+        padding: 8px 12px;
+        font-size: 0.9em;
+        min-width: 35px;
+        height: 35px;
+        border-radius: 5px;
+    }
+    
+    /* Вкладки на мобильных */
+    .tabs {
+        display: flex;
+        background: var(--mobile-bg-tertiary);
+        border-bottom: 1px solid var(--mobile-border-color);
+    }
+    
+    .tab-btn {
+        flex: 1;
+        padding: 12px 8px;
+        font-size: 0.9em;
+        border: none;
+        background: transparent;
+        color: var(--mobile-text-secondary);
+        border-bottom: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+    
+    .tab-btn.active {
+        color: var(--mobile-accent-color);
+        border-bottom-color: var(--mobile-accent-color);
+        background: var(--mobile-bg-secondary);
+    }
+    
+    /* Список чатов */
+    .items-list {
+        padding: 10px;
+        overflow-y: auto;
+        height: calc(100vh - 140px);
+    }
+    
+    .item-card {
+        background: var(--mobile-bg-tertiary);
+        border: 1px solid var(--mobile-border-color);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: all 0.3s ease;
+    }
+    
+    .item-card:hover {
+        border-color: var(--mobile-accent-color);
+        box-shadow: var(--mobile-shadow);
+    }
+    
+    .item-avatar {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 2px solid var(--mobile-accent-color);
+        flex-shrink: 0;
+    }
+    
+    .item-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .default-avatar {
+        width: 100%;
+        height: 100%;
+        background: var(--mobile-accent-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--mobile-bg-primary);
+        font-weight: bold;
+        font-size: 1.2em;
+    }
+    
+    .item-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .item-name {
+        color: var(--mobile-text-primary);
+        font-size: 1em;
+        font-weight: bold;
+        margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .item-preview {
+        color: var(--mobile-text-secondary);
+        font-size: 0.8em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .item-status {
+        flex-shrink: 0;
+    }
+    
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: block;
+    }
+    
+    .status-dot.online {
+        background: var(--mobile-accent-color);
+        box-shadow: 0 0 5px var(--mobile-accent-color);
+    }
+    
+    .status-dot.group {
+        background: #4ecdc4;
+        box-shadow: 0 0 5px #4ecdc4;
+    }
+    
+    /* Пустое состояние */
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--mobile-text-secondary);
+    }
+    
+    .empty-icon {
+        font-size: 3em;
+        margin-bottom: 15px;
+        opacity: 0.5;
+    }
+    
+    .empty-state p {
+        margin-bottom: 20px;
+        font-size: 1em;
+    }
+    
+    /* Кнопки */
+    .btn-primary {
+        background: var(--mobile-accent-color);
+        color: var(--mobile-bg-primary);
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-size: 0.9em;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        background: var(--mobile-accent-hover);
+        box-shadow: var(--mobile-shadow);
+    }
+    
+    /* Модальные окна на мобильных */
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+    
+    .modal-content {
+        background: var(--mobile-bg-secondary);
+        border: 2px solid var(--mobile-accent-color);
+        border-radius: 10px;
+        padding: 20px;
+        width: 100%;
+        max-width: 400px;
+        text-align: center;
+        box-shadow: var(--mobile-shadow-hover);
+    }
+    
+    .modal h3 {
+        color: var(--mobile-accent-color);
+        margin-bottom: 15px;
+        font-size: 1.2em;
+    }
+    
+    .modal p {
+        color: var(--mobile-text-primary);
+        margin-bottom: 20px;
+        font-size: 0.9em;
+    }
+    
+    .modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+    }
+    
+    /* Формы на мобильных */
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-group label {
+        display: block;
+        color: var(--mobile-text-primary);
+        margin-bottom: 5px;
+        font-size: 0.9em;
+    }
+    
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        background: var(--mobile-bg-tertiary);
+        border: 1px solid var(--mobile-border-color);
+        border-radius: 5px;
+        padding: 10px;
+        color: var(--mobile-text-primary);
+        font-size: 0.9em;
+        box-sizing: border-box;
+    }
+    
+    .form-group input:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: var(--mobile-accent-color);
+        box-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
+    }
+    
+    .btn-submit {
+        background: var(--mobile-accent-color);
+        color: var(--mobile-bg-primary);
+        border: none;
+        padding: 12px 25px;
+        border-radius: 5px;
+        font-size: 1em;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+    
+    .btn-submit:hover {
+        background: var(--mobile-accent-hover);
+        box-shadow: var(--mobile-shadow);
+    }
+    
+    /* Уведомления на мобильных */
+    .notification {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        background: var(--mobile-bg-secondary);
+        border: 2px solid var(--mobile-accent-color);
+        border-radius: 8px;
+        padding: 15px;
+        color: var(--mobile-text-primary);
+        z-index: 3000;
+        box-shadow: var(--mobile-shadow);
+        animation: slideInTop 0.3s ease;
+    }
+    
+    .notification.success {
+        border-color: var(--mobile-accent-color);
+    }
+    
+    .notification.error {
+        border-color: #ff4444;
+    }
+    
+    .notification.warning {
+        border-color: #ffaa00;
+    }
+    
+    @keyframes slideInTop {
+        from {
+            transform: translateY(-100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    /* Скрытие элементов на мобильных */
+    .desktop-only {
+        display: none !important;
+    }
+    
+    /* Показ элементов только на мобильных */
+    .mobile-only {
+        display: block !important;
+    }
+    
+    /* Исправление скролла */
+    .scrollable {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Улучшение производительности */
+    * {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+    
+    input, textarea {
+        -webkit-user-select: text;
+        user-select: text;
+    }
+    
+    /* Адаптация для очень маленьких экранов */
+    @media (max-width: 360px) {
+        .sidebar-header {
+            padding: 10px;
+        }
+        
+        .sidebar-header h2 {
+            font-size: 1em;
+        }
+        
+        .btn {
+            padding: 6px 10px;
+            font-size: 0.8em;
+            min-width: 30px;
+            height: 30px;
+        }
+        
+        .item-card {
+            padding: 10px;
+            gap: 10px;
+        }
+        
+        .item-avatar {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .default-avatar {
+            font-size: 1.1em;
+        }
+        
+        .item-name {
+            font-size: 0.9em;
+        }
+        
+        .item-preview {
+            font-size: 0.75em;
+        }
+        
+        .modal-content {
+            padding: 15px;
+        }
+        
+        .modal h3 {
+            font-size: 1.1em;
+        }
+        
+        .modal p {
+            font-size: 0.8em;
+        }
+        
+        .form-group input,
+        .form-group textarea {
+            padding: 8px;
+            font-size: 0.8em;
+        }
+        
+        .btn-submit {
+            padding: 10px 20px;
+            font-size: 0.9em;
+        }
+    }
+    
+    /* Ландшафтная ориентация */
+    @media (max-width: 768px) and (orientation: landscape) {
+        .welcome-card {
+            padding: 10px;
+        }
+        
+        .welcome-card h1 {
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+        
+        .welcome-card p {
+            font-size: 0.8em;
+            margin-bottom: 15px;
+        }
+        
+        .sidebar-header {
+            padding: 10px 15px;
+        }
+        
+        .items-list {
+            height: calc(100vh - 120px);
+        }
+        
+        .item-card {
+            padding: 8px 12px;
+            margin-bottom: 6px;
+        }
+        
+        .item-avatar {
+            width: 35px;
+            height: 35px;
+        }
+        
+        .default-avatar {
+            font-size: 1em;
+        }
+    }
+}
+
+/* Дополнительные стили для планшетов */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .mobile-only {
+        display: none !important;
+    }
+    
+    .desktop-only {
+        display: block !important;
+    }
+    
+    .chats-layout {
+        max-width: 800px;
+        margin: 0 auto;
+        height: 100vh;
+    }
+    
+    .chats-sidebar {
+        width: 300px;
+    }
+    
+    .items-list {
+        height: calc(100vh - 160px);
+    }
+} 

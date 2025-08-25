@@ -1,0 +1,334 @@
+{% extends "base_minimal.html" %}
+
+{% block title %}Чаты - Harvest{% endblock %}
+
+{% block head %}
+<style>
+    .chats-grid {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 2rem;
+        height: calc(100vh - 160px);
+    }
+
+    .sidebar {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .sidebar-header {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .sidebar-title {
+        font-weight: 600;
+        color: var(--text);
+    }
+
+    .tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .tab {
+        flex: 1;
+        padding: 0.75rem;
+        background: none;
+        border: none;
+        color: var(--text-dim);
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.9rem;
+    }
+
+    .tab.active {
+        color: var(--accent);
+        background: rgba(0, 255, 65, 0.1);
+    }
+
+    .tab:hover {
+        color: var(--text);
+    }
+
+    .chat-list {
+        height: calc(100% - 120px);
+        overflow-y: auto;
+    }
+
+    .chat-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .chat-item:hover {
+        background: rgba(0, 255, 65, 0.05);
+    }
+
+    .chat-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .chat-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .chat-name {
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .chat-preview {
+        color: var(--text-dim);
+        font-size: 0.85rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .main-area {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .welcome-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .welcome-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .welcome-text {
+        color: var(--text-dim);
+        margin-bottom: 2rem;
+    }
+
+    .actions {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .empty-state {
+        padding: 2rem;
+        text-align: center;
+        color: var(--text-dim);
+    }
+
+    .empty-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    @media (max-width: 768px) {
+        .chats-grid {
+            grid-template-columns: 1fr;
+            height: auto;
+        }
+
+        .sidebar {
+            height: 50vh;
+        }
+
+        .main-area {
+            height: 40vh;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chats-grid">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">Сообщения</div>
+            <div>
+                <a href="{{ url_for('search') }}" class="btn" style="padding: 0.5rem;">🔍</a>
+                <button class="btn" style="padding: 0.5rem;" onclick="showCreateMenu()">➕</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('chats')">Чаты</button>
+            <button class="tab" onclick="switchTab('groups')">Группы</button>
+            <button class="tab" onclick="switchTab('channels')">Каналы</button>
+        </div>
+
+        <div class="chat-list" id="chats-list">
+            {% if chats %}
+                {% for chat in chats %}
+                <div class="chat-item" onclick="openChat({{ chat.id }})">
+                    <div class="chat-avatar">
+                        {{ chat_users[chat.id].nickname_enc[0].upper() }}
+                    </div>
+                    <div class="chat-info">
+                        <div class="chat-name">{{ chat_users[chat.id].nickname_enc }}</div>
+                        <div class="chat-preview">Нажмите для открытия</div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">💬</div>
+                    <p>Нет активных чатов</p>
+                    <a href="{{ url_for('search') }}" class="btn btn-primary">Найти пользователей</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="chat-list" id="groups-list" style="display: none;">
+            {% if groups %}
+                {% for group in groups %}
+                <div class="chat-item" onclick="openGroup('{{ group.invite_link }}')">
+                    <div class="chat-avatar" style="background: #ff6b6b;">
+                        {{ group.name[0].upper() if group.name else 'G' }}
+                    </div>
+                    <div class="chat-info">
+                        <div class="chat-name">{{ group.name }}</div>
+                        <div class="chat-preview">Группа</div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">👥</div>
+                    <p>Нет групп</p>
+                    <a href="{{ url_for('create_group') }}" class="btn btn-primary">Создать группу</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="chat-list" id="channels-list" style="display: none;">
+            {% if channels %}
+                {% for channel in channels %}
+                <div class="chat-item" onclick="openChannel({{ channel.id }})">
+                    <div class="chat-avatar" style="background: #4ecdc4;">
+                        {{ (channel.name if channel.name else 'C')[0].upper() }}
+                    </div>
+                    <div class="chat-info">
+                        <div class="chat-name">{{ channel.name if channel.name else 'Канал' }}</div>
+                        <div class="chat-preview">{{ (channel.description[:30] if channel.description else '') }}{% if channel.description and channel.description|length > 30 %}...{% endif %}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">📢</div>
+                    <p>Нет каналов</p>
+                    <a href="{{ url_for('create_channel') }}" class="btn btn-primary">Создать канал</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="main-area">
+        <div class="welcome-icon">💬</div>
+        <div class="welcome-title">Добро пожаловать в Harvest</div>
+        <div class="welcome-text">Выберите чат для начала общения</div>
+        <div class="actions">
+            <a href="{{ url_for('search') }}" class="btn btn-primary">🔍 Найти пользователей</a>
+            <a href="{{ url_for('create_group') }}" class="btn">👥 Создать группу</a>
+        </div>
+    </div>
+</div>
+
+<script>
+function switchTab(tab) {
+    // Скрыть все списки
+    document.getElementById('chats-list').style.display = 'none';
+    document.getElementById('groups-list').style.display = 'none';
+    document.getElementById('channels-list').style.display = 'none';
+    
+    // Показать выбранный список
+    document.getElementById(tab + '-list').style.display = 'block';
+    
+    // Обновить активную вкладку
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+function openChat(chatId) {
+    window.location.href = `/chat/${chatId}`;
+}
+
+function openGroup(inviteLink) {
+    window.location.href = `/group/${inviteLink}`;
+}
+
+function openChannel(channelId) {
+    window.location.href = `/channel/${channelId}`;
+}
+
+function showCreateMenu() {
+    const menu = document.createElement('div');
+    menu.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem;
+        z-index: 1000;
+        min-width: 200px;
+    `;
+    
+    menu.innerHTML = `
+        <div style="margin-bottom: 1rem; font-weight: 600;">Создать</div>
+        <a href="{{ url_for('create_group') }}" class="btn" style="width: 100%; margin-bottom: 0.5rem;">👥 Группу</a>
+        <a href="{{ url_for('create_channel') }}" class="btn" style="width: 100%; margin-bottom: 0.5rem;">📢 Канал</a>
+        <button class="btn" style="width: 100%;" onclick="this.parentElement.remove()">Отмена</button>
+    `;
+    
+    document.body.appendChild(menu);
+    
+    // Закрытие по клику вне меню
+    setTimeout(() => {
+        document.addEventListener('click', function closeMenu(e) {
+            if (!menu.contains(e.target)) {
+                menu.remove();
+                document.removeEventListener('click', closeMenu);
+            }
+        });
+    }, 100);
+}
+</script>
+{% endblock %}

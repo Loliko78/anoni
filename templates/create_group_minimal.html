@@ -1,0 +1,66 @@
+{% extends "base_minimal.html" %}
+
+{% block title %}Создать группу - Harvest{% endblock %}
+
+{% block head %}
+<style>
+    .create-container {
+        max-width: 500px;
+        margin: 2rem auto;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 2rem;
+    }
+
+    .create-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .create-title {
+        font-size: 1.75rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .create-subtitle {
+        color: var(--text-dim);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="create-container">
+    <div class="create-header">
+        <div class="create-title">👥 Создать группу</div>
+        <div class="create-subtitle">Создайте новую группу для общения</div>
+    </div>
+
+    <form method="POST">
+        <div class="form-group">
+            <label for="group_name">Название группы</label>
+            <input type="text" id="group_name" name="group_name" required 
+                   placeholder="Введите название группы">
+        </div>
+
+        <div class="form-group">
+            <label for="description">Описание</label>
+            <textarea id="description" name="description" rows="3" 
+                      placeholder="Краткое описание группы"></textarea>
+        </div>
+
+        <div class="form-actions">
+            <a href="{{ url_for('index') }}" class="btn">Отмена</a>
+            <button type="submit" class="btn btn-primary">Создать группу</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

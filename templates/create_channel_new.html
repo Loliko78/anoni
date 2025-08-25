@@ -1,0 +1,34 @@
+{% extends "base_new.html" %}
+
+{% block title %}Создать канал - Harvestano{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <h2>Создать канал</h2>
+    <form method="POST">
+        <div class="form-group">
+            <label for="name">Название канала</label>
+            <input type="text" 
+                   id="name" 
+                   name="name" 
+                   class="input-field" 
+                   placeholder="Введите название канала"
+                   required>
+        </div>
+        <div class="form-group">
+            <label for="description">Описание канала</label>
+            <textarea id="description" 
+                      name="description" 
+                      class="input-field" 
+                      placeholder="Краткое описание канала (необязательно)"
+                      rows="3"></textarea>
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn-submit">Создать канал</button>
+        </div>
+    </form>
+    <div class="text-center mt-2">
+        <a href="{{ url_for('index') }}" style="color: var(--accent);">← Назад к чатам</a>
+    </div>
+</div>
+{% endblock %}

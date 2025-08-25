@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+
+{% block title %}Управление ключами{% endblock %}
+
+{% block content %}
+<div class="key-management-page">
+    <div class="key-management-container">
+        <div class="key-management-header">
+            <h2 class="glitch-text" data-text="УПРАВЛЕНИЕ КЛЮЧАМИ">УПРАВЛЕНИЕ КЛЮЧАМИ</h2>
+            <div class="key-management-info">
+                {% if chat_type == 'personal' %}
+                    <p>Личный чат с {{ other_user.nickname_enc }}</p>
+                {% else %}
+                    <p>Группа: {{ group.name_enc.decode('utf-8') if group.name_enc else 'Unknown Group' }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="key-management-content">
+            <div class="key-section">
+                <h4>Текущий ключ:</h4>
+                <div class="current-key" id="currentKeyDisplay">
+                    {% if current_key %}
+                        <span class="key-text">{{ current_key }}</span>
+                        <button onclick="copyKey()" class="btn btn-secondary">Копировать</button>
+                    {% else %}
+                        <span class="no-key">Не установлен</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="key-section">
+                <h4>Установить новый ключ:</h4>
+                <form method="POST" class="key-form">
+                    <input type="text" name="new_key" id="newKeyInput" placeholder="Введите ключ шифрования" class="key-input" value="{{ new_key or '' }}">
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-primary">Установить ключ</button>
+                        <button type="button" onclick="generateKey()" class="btn btn-secondary">Сгенерировать ключ</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="key-section">
+                <h4>Действия с ключом:</h4>
+                <div class="btn-group">
+                    <button onclick="clearKey()" class="btn btn-danger">Очистить ключ</button>
+                    {% if chat_type == 'personal' %}
+                        <button onclick="syncKeys()" class="btn btn-secondary">Синхронизировать ключи</button>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="key-section">
+                <h4>Информация о шифровании:</h4>
+                <div class="encryption-info">
+                    <p>• Ключ используется для шифрования сообщений между участниками</p>
+                    <p>• Без ключа сообщения отображаются в зашифрованном виде</p>
+                    <p>• Ключ хранится только в вашем браузере</p>
+                    <p>• При очистке ключа старые сообщения станут недоступны</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="key-management-actions">
+            <a href="{{ back_url }}" class="btn btn-primary">Вернуться к чату</a>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">На главную</a>
+        </div>
+    </div>
+</div>
+
+<style>
+.key-management-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+    padding: 2rem;
+}
+
+.key-management-container {
+    background: var(--bg-primary);
+    border: 1px solid var(--main-accent-color);
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+    border-radius: 10px;
+    padding: 3rem;
+    max-width: 800px;
+    width: 100%;
+}
+
+.key-management-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.key-management-header h2 {
+    color: var(--main-accent-color);
+    font-size: 2.5em;
+    margin-bottom: 1rem;
+    text-shadow: 0 0 10px var(--main-accent-color);
+    animation: glitch 2s infinite;
+}
+
+.key-management-info p {
+    color: var(--text-secondary);
+    font-size: 1.2em;
+    margin: 0;
+}
+
+.key-management-content {
+    margin-bottom: 3rem;
+}
+
+.key-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.key-section h4 {
+    color: var(--main-accent-color);
+    font-size: 1.3em;
+    margin-bottom: 1rem;
+    border-bottom: 1px dashed var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+.current-key {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    padding: 1rem;
+    border-radius: 5px;
+    font-family: monospace;
+    word-break: break-all;
+}
+
+.key-text {
+    color: var(--text-primary);
+    font-size: 1.1em;
+    flex: 1;
+}
+
+.no-key {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.key-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.key-input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 12px;
+    font-family: var(--font-main);
+    font-size: 1em;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+.key-input:focus {
+    outline: none;
+    border-color: var(--main-accent-color);
+    box-shadow: 0 0 10px var(--main-accent-color);
+}
+
+.btn-group {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.btn {
+    background: var(--main-accent-color);
+    color: var(--background-color);
+    border: none;
+    padding: 10px 20px;
+    font-family: var(--font-main);
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    border-radius: 5px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn:hover {
+    background: var(--secondary-accent-color);
+    box-shadow: 0 0 10px var(--main-accent-color);
+}
+
+.btn.btn-primary {
+    background: var(--main-accent-color);
+}
+
+.btn.btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn.btn-danger {
+    background: var(--error-color);
+    color: var(--text-primary);
+}
+
+.encryption-info {
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.encryption-info p {
+    margin: 0.5rem 0;
+    padding-left: 1rem;
+    position: relative;
+}
+
+.encryption-info p::before {
+    content: ">";
+    color: var(--main-accent-color);
+    position: absolute;
+    left: 0;
+}
+
+.key-management-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+@keyframes glitch {
+    0%, 100% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+}
+
+@media (max-width: 768px) {
+    .key-management-page {
+        padding: 1rem;
+    }
+    
+    .key-management-container {
+        padding: 2rem;
+    }
+    
+    .key-management-header h2 {
+        font-size: 1.8em;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+    }
+    
+    .key-management-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .key-management-header h2 {
+        font-size: 1.5em;
+    }
+    
+    .key-section {
+        padding: 1rem;
+    }
+    
+    .current-key {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+</style>
+
+<script>
+function generateKey() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 32; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('newKeyInput').value = result;
+}
+
+function copyKey() {
+    const keyText = document.querySelector('.key-text');
+    if (keyText) {
+        const textArea = document.createElement('textarea');
+        textArea.value = keyText.textContent;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('Ключ скопирован в буфер обмена');
+    }
+}
+
+function clearKey() {
+    if (confirm('Очистить ключ? Старые сообщения станут недоступны.')) {
+        {% if chat_type == 'personal' %}
+            localStorage.removeItem('chat_key_{{ other_user.id }}');
+        {% else %}
+            localStorage.removeItem('group_key_{{ group.id }}');
+        {% endif %}
+        alert('Ключ очищен');
+        location.reload();
+    }
+}
+
+function syncKeys() {
+    {% if chat_type == 'personal' %}
+        // Синхронизация ключей для личного чата
+        const currentKey = localStorage.getItem('chat_key_{{ other_user.id }}');
+        if (currentKey) {
+            fetch('/chat/{{ chat.id }}/sync_keys', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ key: currentKey })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Ключи синхронизированы');
+                    // Обновляем отображение ключа
+                    document.getElementById('currentKeyDisplay').innerHTML = `
+                        <span class="key-text">${data.chat_key}</span>
+                        <button onclick="copyKey()" class="btn btn-secondary">Копировать</button>
+                    `;
+                    // Сохраняем новый ключ в localStorage
+                    localStorage.setItem('chat_key_{{ other_user.id }}', data.chat_key);
+                } else {
+                    alert('Ошибка синхронизации: ' + (data.message || 'Неизвестная ошибка'));
+                }
+            })
+            .catch(error => {
+                console.error('Error syncing keys:', error);
+                alert('Ошибка синхронизации ключей');
+            });
+        } else {
+            alert('Нет ключа для синхронизации');
+        }
+    {% else %}
+        // Синхронизация ключей для группы
+        const currentKey = localStorage.getItem('group_key_{{ group.id }}');
+        if (currentKey) {
+            fetch('/group/{{ invite_link }}/sync_keys', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ key: currentKey })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Ключи группы синхронизированы');
+                    // Обновляем отображение ключа
+                    document.getElementById('currentKeyDisplay').innerHTML = `
+                        <span class="key-text">${data.key}</span>
+                        <button onclick="copyKey()" class="btn btn-secondary">Копировать</button>
+                    `;
+                    // Сохраняем новый ключ в localStorage
+                    localStorage.setItem('group_key_{{ group.id }}', data.key);
+                } else {
+                    alert('Ошибка синхронизации: ' + (data.message || 'Неизвестная ошибка'));
+                }
+            })
+            .catch(error => {
+                console.error('Error syncing group keys:', error);
+                alert('Ошибка синхронизации ключей группы');
+            });
+        } else {
+            alert('Нет ключа группы для синхронизации');
+        }
+    {% endif %}
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,862 @@
+{% extends "base.html" %}
+
+{% block title %}Чаты{% endblock %}
+
+{% block content %}
+<div class="chats-layout">
+    <!-- Боковая панель с чатами -->
+    <div class="chats-sidebar">
+        <div class="sidebar-header">
+            <h2>💬 HARVEST</h2>
+            <div class="header-actions">
+                <button class="btn btn-search" onclick="showSearch()" title="Поиск">
+                    🔍
+                </button>
+                <button class="btn btn-create" onclick="showCreateOptions()" title="Создать">
+                    ➕
+                </button>
+            </div>
+        </div>
+        
+        <div class="sidebar-content">
+            <!-- Вкладки -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('chats')" data-tab="chats">
+                    💬 Чаты
+                </button>
+                <button class="tab-btn" onclick="switchTab('groups')" data-tab="groups">
+                    👥 Группы
+                </button>
+                <button class="tab-btn" onclick="switchTab('channels')" data-tab="channels">
+                    📢 Каналы
+                </button>
+            </div>
+            
+            <!-- Содержимое вкладок -->
+            <div class="tab-content">
+                <!-- Чаты -->
+                <div class="tab-pane active" id="chats-tab">
+                    <div class="items-list">
+                        {% for chat in chats %}
+                        <div class="item-card chat-item" onclick="openChat({{ chat.id }})">
+                            <div class="item-avatar">
+                                {% if chat_users[chat.id].avatar %}
+                                    <img src="{{ url_for('static', filename=chat_users[chat.id].avatar) }}" alt="Аватар">
+                                {% else %}
+                                    <div class="default-avatar">
+                                        <span>{{ chat_users[chat.id].nickname_enc[0].upper() }}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">{{ chat_users[chat.id].nickname_enc }}</div>
+                                <div class="item-preview">Нажмите для открытия чата</div>
+                            </div>
+                            <div class="item-status">
+                                <span class="status-dot online"></span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if not chats %}
+                        <div class="empty-state">
+                            <div class="empty-icon">💬</div>
+                            <p>Нет активных чатов</p>
+                            <button class="btn btn-primary" onclick="showSearch()">Найти пользователей</button>
+                        </div>
+                            {% endif %}
+                        </div>
+                </div>
+                
+                <!-- Группы -->
+                <div class="tab-pane" id="groups-tab">
+                    <div class="items-list">
+                        {% for group in groups %}
+                        <div class="item-card group-item" onclick="openGroup('{{ group.invite_link }}')">
+                            <div class="item-avatar">
+                                <div class="default-avatar group-avatar">
+                                    <span>{{ (group.name_enc.decode('utf-8') if group.name_enc else 'G')[0].upper() }}</span>
+            </div>
+        </div>
+                            <div class="item-info">
+                                <div class="item-name">{{ group.name_enc.decode('utf-8') if group.name_enc else 'Группа' }}</div>
+                                <div class="item-preview">Группа</div>
+                            </div>
+                            <div class="item-status">
+                                <span class="status-dot group"></span>
+                        </div>
+                        </div>
+                        {% endfor %}
+                        {% if not groups %}
+                        <div class="empty-state">
+                            <div class="empty-icon">👥</div>
+                            <p>Нет групп</p>
+                            <button class="btn btn-primary" onclick="showCreateOptions()">Создать группу</button>
+                        </div>
+                        {% endif %}
+            </div>
+        </div>
+
+                <!-- Каналы -->
+                <div class="tab-pane" id="channels-tab">
+                    <div class="items-list">
+                        {% for channel in channels %}
+                        <div class="item-card channel-item" onclick="openChannel({{ channel.id }})">
+                            <div class="item-avatar">
+                                <div class="default-avatar channel-avatar">
+                                    <span>{{ channel.name[0].upper() }}</span>
+                                </div>
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">{{ channel.name }}</div>
+                                <div class="item-preview">{{ channel.description[:30] }}{% if channel.description|length > 30 %}...{% endif %}</div>
+                            </div>
+                            <div class="item-status">
+                                <span class="status-dot channel"></span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if not channels %}
+                        <div class="empty-state">
+                            <div class="empty-icon">📢</div>
+                            <p>Нет каналов</p>
+                            <button class="btn btn-primary" onclick="showCreateOptions()">Создать канал</button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Основная область -->
+    <div class="chats-main">
+        <div class="welcome-screen">
+            <div class="welcome-content">
+                <div class="welcome-icon">💬</div>
+                <h1>Добро пожаловать в HARVEST</h1>
+                <p>Безопасная и анонимная платформа для общения</p>
+                <div class="welcome-features">
+                    <div class="feature">
+                        <span class="feature-icon">🔒</span>
+                        <span>Шифрование</span>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">👤</span>
+                        <span>Анонимность</span>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">⚡</span>
+                        <span>Быстро</span>
+                    </div>
+                </div>
+                <div class="welcome-actions">
+                    <button class="btn btn-primary" onclick="showSearch()">
+                        🔍 Найти пользователей
+                    </button>
+                    <button class="btn btn-secondary" onclick="showCreateOptions()">
+                        ➕ Создать группу
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно создания -->
+<div id="createModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Создать</h3>
+            <button class="btn-close" onclick="hideCreateOptions()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="create-options">
+                <div class="create-option" onclick="createGroup()">
+                    <div class="option-icon">👥</div>
+                    <div class="option-info">
+                        <h4>Создать группу</h4>
+                        <p>Создайте групповой чат для общения с несколькими пользователями</p>
+                    </div>
+                </div>
+                <div class="create-option" onclick="createChannel()">
+                    <div class="option-icon">📢</div>
+                    <div class="option-info">
+                        <h4>Создать канал</h4>
+                        <p>Создайте канал для публикации сообщений</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно поиска -->
+<div id="searchModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Поиск пользователей</h3>
+            <button class="btn-close" onclick="hideSearch()">×</button>
+        </div>
+        <div class="modal-body">
+            <form id="searchForm" class="search-form">
+                <div class="input-group">
+                    <input type="text" id="searchInput" placeholder="Введите никнейм пользователя..." required>
+                    <button type="submit" class="btn btn-primary">🔍 Найти</button>
+                </div>
+            </form>
+            <div id="searchResults" class="search-results"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Основной макет */
+.chats-layout {
+    display: flex;
+    height: 100vh;
+    background: var(--bg-primary);
+}
+
+/* Боковая панель */
+.chats-sidebar {
+    width: 350px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-primary);
+}
+
+.sidebar-header h2 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.sidebar-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Вкладки */
+.tabs {
+    display: flex;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 1rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-btn.active {
+    color: #00ff41;
+    border-bottom-color: #00ff41;
+    background: rgba(0, 255, 65, 0.1);
+}
+
+/* Содержимое вкладок */
+.tab-content {
+    flex: 1;
+    overflow: hidden;
+}
+
+.tab-pane {
+    display: none;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+/* Список элементов */
+.items-list {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.item-card {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.item-card:hover {
+    background: rgba(0, 255, 65, 0.1);
+    border-color: #00ff41;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 255, 65, 0.2);
+}
+
+.item-avatar {
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.item-avatar img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #00ff41;
+}
+
+.default-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #00ff41, #00cc33);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #000;
+    border: 2px solid #00ff41;
+}
+
+.group-avatar {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    border-color: #ff6b6b;
+}
+
+.channel-avatar {
+    background: linear-gradient(135deg, #4ecdc4, #44a08d);
+    border-color: #4ecdc4;
+}
+
+.item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.item-name {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.item-preview {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.item-status {
+    margin-left: 0.5rem;
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-dot.online {
+    background: #00ff41;
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+}
+
+.status-dot.group {
+    background: #ff6b6b;
+    box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+}
+
+.status-dot.channel {
+    background: #4ecdc4;
+    box-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
+}
+
+/* Пустое состояние */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-secondary);
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+}
+
+/* Основная область */
+.chats-main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.welcome-screen {
+    text-align: center;
+    max-width: 600px;
+}
+
+.welcome-content {
+    background: var(--bg-secondary);
+    padding: 3rem;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.welcome-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+}
+
+.welcome-content h1 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
+.welcome-content p {
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+}
+
+.welcome-features {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.feature {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.feature-icon {
+    font-size: 1.5rem;
+}
+
+.feature span:last-child {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.welcome-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Кнопки */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #00ff41, #00cc33);
+    color: #000;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #00cc33, #009926);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 255, 65, 0.3);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: rgba(0, 255, 65, 0.1);
+    border-color: #00ff41;
+    transform: translateY(-2px);
+}
+
+.btn-search, .btn-create {
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 1.2rem;
+}
+
+.btn-search:hover, .btn-create:hover {
+    background: rgba(0, 255, 65, 0.2);
+    border-color: #00ff41;
+}
+
+/* Модальные окна */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    margin: 10% auto;
+    padding: 0;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-primary);
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.btn-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+/* Опции создания */
+.create-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.create-option {
+    display: flex;
+    align-items: center;
+    padding: 1.5rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.create-option:hover {
+    background: rgba(0, 255, 65, 0.1);
+    border-color: #00ff41;
+    transform: translateY(-2px);
+}
+
+.option-icon {
+    font-size: 2rem;
+    margin-right: 1rem;
+}
+
+.option-info h4 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+}
+
+.option-info p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Форма поиска */
+.search-form {
+    margin-bottom: 1.5rem;
+}
+
+.input-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.input-group input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: #00ff41;
+    box-shadow: 0 0 0 3px rgba(0, 255, 65, 0.1);
+}
+
+.search-results {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Мобильные стили */
+@media (max-width: 768px) {
+    .chats-layout {
+        flex-direction: column;
+    }
+    
+    .chats-sidebar {
+        width: 100%;
+        height: 60vh;
+    }
+    
+    .chats-main {
+        height: 40vh;
+        padding: 1rem;
+    }
+    
+    .welcome-content {
+        padding: 2rem;
+    }
+    
+    .welcome-content h1 {
+        font-size: 2rem;
+    }
+    
+    .welcome-features {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .welcome-actions {
+        flex-direction: column;
+    }
+    
+    .modal-content {
+        margin: 5% auto;
+        width: 95%;
+    }
+}
+
+@media (max-width: 480px) {
+    .sidebar-header {
+        padding: 1rem;
+    }
+    
+    .sidebar-header h2 {
+        font-size: 1.2rem;
+    }
+    
+    .tab-btn {
+        padding: 0.75rem;
+        font-size: 0.8rem;
+    }
+    
+    .item-card {
+        padding: 0.75rem;
+    }
+    
+    .item-avatar img,
+    .default-avatar {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+    
+    .welcome-content {
+        padding: 1.5rem;
+    }
+    
+    .welcome-content h1 {
+        font-size: 1.5rem;
+    }
+}
+</style>
+
+<script>
+// Переключение вкладок
+function switchTab(tabName) {
+    // Убираем активный класс со всех вкладок
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+        pane.classList.remove('active');
+    });
+    
+    // Добавляем активный класс к выбранной вкладке
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    document.getElementById(`${tabName}-tab`).classList.add('active');
+}
+
+// Открытие чата
+function openChat(chatId) {
+    window.location.href = `/chat/${chatId}`;
+}
+
+// Открытие группы
+function openGroup(inviteLink) {
+    window.location.href = `/group/${inviteLink}`;
+}
+
+// Открытие канала
+function openChannel(channelId) {
+    window.location.href = `/channel/${channelId}`;
+}
+
+// Показать опции создания
+function showCreateOptions() {
+    document.getElementById('createModal').style.display = 'block';
+}
+
+// Скрыть опции создания
+function hideCreateOptions() {
+    document.getElementById('createModal').style.display = 'none';
+}
+
+// Показать поиск
+function showSearch() {
+    document.getElementById('searchModal').style.display = 'block';
+    document.getElementById('searchInput').focus();
+}
+
+// Скрыть поиск
+function hideSearch() {
+    document.getElementById('searchModal').style.display = 'none';
+}
+
+// Создание группы
+function createGroup() {
+    window.location.href = '/group/create';
+}
+
+// Создание канала
+function createChannel() {
+    window.location.href = '/channels/create';
+}
+
+// Обработка поиска
+document.getElementById('searchForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const query = document.getElementById('searchInput').value.trim();
+    
+    if (query) {
+        // Здесь будет AJAX запрос для поиска пользователей
+        fetch('/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `query=${encodeURIComponent(query)}`
+        })
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('searchResults').innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Ошибка поиска');
+        });
+    }
+});
+
+// Закрытие модальных окон при клике вне их
+window.addEventListener('click', function(e) {
+    if (e.target.classList.contains('modal')) {
+        e.target.style.display = 'none';
+    }
+});
+
+// Закрытие модальных окон по Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.style.display = 'none';
+        });
+    }
+});
+</script>
+{% endblock %} 

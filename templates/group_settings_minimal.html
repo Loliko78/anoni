@@ -1,0 +1,218 @@
+{% extends "base_minimal.html" %}
+
+{% block title %}Настройки группы - {{ group.name }}{% endblock %}
+
+{% block head %}
+<style>
+    .settings-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .settings-section {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        color: var(--text);
+    }
+
+    .group-avatar-section {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .group-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: #ff6b6b;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        font-weight: 600;
+        margin: 0 auto 1rem;
+    }
+
+    .group-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .invite-link-section {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .invite-link {
+        font-family: monospace;
+        word-break: break-all;
+        color: var(--accent);
+        margin-bottom: 0.5rem;
+    }
+
+    .copy-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    .members-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .member-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+    }
+
+    .member-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .member-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+
+    .member-name {
+        font-weight: 500;
+    }
+
+    .creator-badge {
+        background: #ffd700;
+        color: #000;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <div class="settings-section">
+        <div class="section-title">Основные настройки</div>
+        
+        <form method="POST" enctype="multipart/form-data">
+            <div class="group-avatar-section">
+                <div class="group-avatar">
+                    {% if group.avatar %}
+                        <img src="{{ url_for('static', filename=group.avatar) }}" alt="Аватар группы">
+                    {% else %}
+                        {{ group.name[0].upper() if group.name else 'G' }}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="avatar">Изменить аватар</label>
+                    <input type="file" name="avatar" id="avatar" accept="image/*">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="name">Название группы</label>
+                <input type="text" id="name" name="name" value="{{ group.name }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Описание</label>
+                <textarea id="description" name="description" rows="3">{{ group.description or '' }}</textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+        </form>
+    </div>
+
+    <div class="settings-section">
+        <div class="section-title">Ссылка-приглашение</div>
+        <div class="invite-link-section">
+            <div class="invite-link" id="inviteLink">{{ request.host_url }}group/join/{{ group.invite_link }}</div>
+            <button class="btn copy-btn" onclick="copyInviteLink()">📋 Копировать</button>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <div class="section-title">Участники ({{ members|length }})</div>
+        <div class="members-list">
+            {% for member in members %}
+            <div class="member-item">
+                <div class="member-info">
+                    <div class="member-avatar">
+                        {% if member.user.avatar %}
+                            <img src="{{ url_for('static', filename=member.user.avatar) }}" alt="Аватар">
+                        {% else %}
+                            {{ member.user.nickname_enc[0].upper() }}
+                        {% endif %}
+                    </div>
+                    <div>
+                        <div class="member-name">{{ member.user.nickname_enc }}</div>
+                        {% if member.user.id == group.creator_id %}
+                            <span class="creator-badge">👑 Создатель</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if member.user.id != group.creator_id %}
+                <form method="POST" action="{{ url_for('remove_group_member', invite_link=group.invite_link, user_id=member.user.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Удалить участника?')">Удалить</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="actions">
+        <a href="{{ url_for('group_chat', invite_link=group.invite_link) }}" class="btn">← Назад к чату</a>
+        <form method="POST" action="{{ url_for('delete_group', group_id=group.id) }}" style="display: inline;">
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Удалить группу? Это действие нельзя отменить!')">Удалить группу</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function copyInviteLink() {
+    const link = document.getElementById('inviteLink').textContent;
+    navigator.clipboard.writeText(link).then(() => {
+        alert('Ссылка скопирована!');
+    });
+}
+</script>
+{% endblock %}

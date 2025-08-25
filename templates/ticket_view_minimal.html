@@ -1,0 +1,231 @@
+{% extends "base_minimal.html" %}
+
+{% block title %}Тикет #{{ ticket.id }} - Harvest{% endblock %}
+
+{% block head %}
+<style>
+    .ticket-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .ticket-header {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .ticket-id {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--accent);
+        margin-bottom: 0.5rem;
+    }
+
+    .ticket-subject {
+        font-size: 1.25rem;
+        font-weight: 500;
+        margin-bottom: 1rem;
+    }
+
+    .ticket-meta {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .meta-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .meta-label {
+        font-size: 0.8rem;
+        color: var(--text-dim);
+        text-transform: uppercase;
+    }
+
+    .meta-value {
+        font-weight: 500;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .status-open {
+        background: rgba(255, 215, 0, 0.2);
+        color: #ffd700;
+    }
+
+    .status-in_progress {
+        background: rgba(0, 123, 255, 0.2);
+        color: #007bff;
+    }
+
+    .status-closed {
+        background: rgba(40, 167, 69, 0.2);
+        color: #28a745;
+    }
+
+    .ticket-content {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .content-section {
+        margin-bottom: 2rem;
+    }
+
+    .content-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--text);
+    }
+
+    .content-text {
+        line-height: 1.6;
+        white-space: pre-wrap;
+    }
+
+    .evidence-image {
+        max-width: 100%;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+    }
+
+    .admin-response {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 1.5rem;
+        margin-top: 1rem;
+    }
+
+    .response-form {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 2rem;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 1.5rem;
+    }
+
+    .status-select {
+        padding: 0.5rem;
+        margin-right: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ticket-container">
+    <div class="ticket-header">
+        <div class="ticket-id">Тикет #{{ ticket.id }}</div>
+        <div class="ticket-subject">{{ ticket.subject }}</div>
+        
+        <div class="ticket-meta">
+            <div class="meta-item">
+                <div class="meta-label">Статус</div>
+                <div class="meta-value">
+                    <span class="status-badge status-{{ ticket.status }}">
+                        {% if ticket.status == 'open' %}🟡 Открыт
+                        {% elif ticket.status == 'in_progress' %}🔵 В работе
+                        {% elif ticket.status == 'closed' %}🟢 Закрыт
+                        {% else %}{{ ticket.status }}{% endif %}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="meta-item">
+                <div class="meta-label">Пользователь</div>
+                <div class="meta-value">{{ ticket.user_nickname }}</div>
+            </div>
+            
+            <div class="meta-item">
+                <div class="meta-label">Создан</div>
+                <div class="meta-value">{{ ticket.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
+            </div>
+            
+            <div class="meta-item">
+                <div class="meta-label">Обновлён</div>
+                <div class="meta-value">{{ ticket.updated_at.strftime('%d.%m.%Y %H:%M') }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ticket-content">
+        <div class="content-section">
+            <div class="content-title">Описание проблемы</div>
+            <div class="content-text">{{ ticket.description }}</div>
+        </div>
+
+        {% if ticket.scammer_nickname %}
+        <div class="content-section">
+            <div class="content-title">Ник мошенника</div>
+            <div class="content-text">{{ ticket.scammer_nickname }}</div>
+        </div>
+        {% endif %}
+
+        {% if ticket.evidence_image %}
+        <div class="content-section">
+            <div class="content-title">Доказательство</div>
+            <img src="{{ url_for('static', filename=ticket.evidence_image) }}" 
+                 alt="Доказательство" class="evidence-image">
+        </div>
+        {% endif %}
+
+        {% if ticket.admin_response %}
+        <div class="content-section">
+            <div class="content-title">Ответ администратора</div>
+            <div class="admin-response">
+                <div class="content-text">{{ ticket.admin_response }}</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="response-form">
+        <div class="content-title">Управление тикетом</div>
+        
+        <form method="POST" action="{{ url_for('update_ticket_status', ticket_id=ticket.id) }}">
+            <div class="form-group">
+                <label for="status">Статус тикета</label>
+                <select name="status" id="status" class="status-select">
+                    <option value="open" {% if ticket.status == 'open' %}selected{% endif %}>🟡 Открыт</option>
+                    <option value="in_progress" {% if ticket.status == 'in_progress' %}selected{% endif %}>🔵 В работе</option>
+                    <option value="closed" {% if ticket.status == 'closed' %}selected{% endif %}>🟢 Закрыт</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="response">Ответ администратора</label>
+                <textarea name="response" id="response" rows="4" 
+                          placeholder="Введите ответ пользователю...">{{ ticket.admin_response or '' }}</textarea>
+            </div>
+
+            <div class="form-actions">
+                <a href="{{ url_for('admin_panel') }}" class="btn">← Назад к панели</a>
+                <button type="submit" class="btn btn-primary">Обновить тикет</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

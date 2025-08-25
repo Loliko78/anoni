@@ -1,0 +1,117 @@
+{% extends "base_new.html" %}
+
+{% block title %}Профиль - Harvestano{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <h1 class="mb-3">Профиль пользователя</h1>
+    
+    <div style="background: var(--bg-secondary); padding: 2rem; border-radius: var(--radius); margin-bottom: 2rem;">
+        <div style="display: flex; align-items: center; gap: 2rem; margin-bottom: 2rem;">
+            <div class="chat-avatar" style="width: 80px; height: 80px; font-size: 2rem;">
+                {{ current_user.nickname_enc[0].upper() }}
+            </div>
+            <div>
+                <h2 style="margin-bottom: 0.5rem;">{{ current_user.nickname_enc }}</h2>
+                <p style="color: var(--text-secondary);">
+                    {% if current_user.is_admin %}Администратор{% else %}Пользователь{% endif %}
+                </p>
+            </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Аватар</label>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                    <label style="cursor: pointer;">
+                        <input type="radio" name="avatar_choice" value="avatars/cybermask.svg" style="margin-right: 0.5rem;">
+                        Кибер маска
+                    </label>
+                    <label style="cursor: pointer;">
+                        <input type="radio" name="avatar_choice" value="avatars/darkmask.svg" style="margin-right: 0.5rem;">
+                        Темная маска
+                    </label>
+                    <label style="cursor: pointer;">
+                        <input type="radio" name="avatar_choice" value="avatars/hacker.svg" style="margin-right: 0.5rem;">
+                        Хакер
+                    </label>
+                </div>
+                <input type="file" name="avatar_upload" accept="image/*" class="input-field">
+            </div>
+
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" name="anonymous_mode" 
+                           {% if current_user.anonymous_mode %}checked{% endif %}>
+                    Анонимный режим (шифрование сообщений)
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label for="global_chat_key">Глобальный ключ для чатов</label>
+                <input type="text" 
+                       id="global_chat_key" 
+                       name="global_chat_key" 
+                       class="input-field" 
+                       value="{{ current_user.global_chat_key or '' }}"
+                       placeholder="Оставьте пустым для автоматической генерации">
+            </div>
+
+            <div class="form-group">
+                <label for="global_group_key">Глобальный ключ для групп</label>
+                <input type="text" 
+                       id="global_group_key" 
+                       name="global_group_key" 
+                       class="input-field" 
+                       value="{{ current_user.global_group_key or '' }}"
+                       placeholder="Оставьте пустым для автоматической генерации">
+            </div>
+
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button type="submit" class="btn">Сохранить изменения</button>
+                <button type="button" onclick="generateKeys()" class="btn btn-secondary">
+                    Сгенерировать новые ключи
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div style="background: var(--bg-secondary); padding: 2rem; border-radius: var(--radius); border-left: 4px solid var(--error);">
+        <h3 style="color: var(--error); margin-bottom: 1rem;">Опасная зона</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+            Удаление профиля необратимо. Все ваши сообщения и данные будут потеряны.
+        </p>
+        <form method="POST" onsubmit="return confirmDelete()">
+            <input type="hidden" name="delete_profile" value="1">
+            <button type="submit" class="btn btn-danger">Удалить профиль</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function generateKeys() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+        
+        function generateKey() {
+            let result = '';
+            for (let i = 0; i < 44; i++) { // Base64 key length
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+        
+        document.getElementById('global_chat_key').value = generateKey();
+        document.getElementById('global_group_key').value = generateKey();
+        
+        alert('Новые ключи сгенерированы. Не забудьте сохранить изменения.');
+    }
+
+    async function confirmDelete() {
+        const confirmed = await confirm(
+            'Вы уверены, что хотите удалить свой профиль? ' +
+            'Это действие необратимо и приведет к потере всех ваших данных.'
+        );
+        return confirmed;
+    }
+</script>
+{% endblock %}

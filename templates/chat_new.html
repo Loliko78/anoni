@@ -1,0 +1,201 @@
+{% extends "base_new.html" %}
+
+{% block title %}Чат с {{ nickname }} - Harvestano{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="chat-header">
+        <h2>{{ nickname }}</h2>
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">Назад</a>
+            {% if show_sync_button %}
+            <button onclick="syncKeys()" class="btn">Синхронизировать ключи</button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="messages-container" id="messages-container">
+        {% for message in messages %}
+        <div class="message {% if message.sender_id == current_user.id %}sent{% else %}received{% endif %}" 
+             data-message-id="{{ message.id }}">
+            <div class="message-content">
+                {% if message.sender_id != current_user.id %}
+                <div class="message-sender">{{ nickname }}</div>
+                {% endif %}
+                <div class="message-text" id="message-text-{{ message.id }}">
+                    {% if message.deleted %}
+                        <em style="color: var(--text-muted);">[Сообщение удалено]</em>
+                    {% else %}
+                        {{ message.content }}
+                    {% endif %}
+                </div>
+                <div class="message-time">
+                    {{ message.timestamp.strftime('%H:%M') }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="chat-input-container">
+        <form class="chat-input-form" onsubmit="sendMessage(event)">
+            <div class="chat-input-group">
+                <textarea id="message-input" class="chat-input" 
+                         placeholder="Введите сообщение..." 
+                         rows="1" 
+                         onkeypress="handleKeyPress(event)"></textarea>
+                <input type="file" id="file-input" style="display: none;" onchange="handleFileSelect(event)">
+                <label for="file-input" style="cursor: pointer; color: var(--accent); font-size: 12px;">
+                    📎 Прикрепить файл
+                </label>
+            </div>
+            <button type="submit" class="chat-send-btn">Отправить</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    const chatId = {{ chat.id }};
+    const currentUserId = {{ current_user.id }};
+    const otherUserId = {{ other_user.id if other_user else 'null' }};
+    const chatKey = '{{ chat_key_b64 }}';
+    
+    let socket;
+
+    // Initialize Socket.IO
+    document.addEventListener('DOMContentLoaded', function() {
+        socket = io();
+        
+        socket.on('connect', function() {
+            console.log('Connected to server');
+            socket.emit('join_chat', {
+                chat_id: chatId,
+                user_id: currentUserId
+            });
+        });
+
+        socket.on('new_message', function(data) {
+            if (data.chat_id === chatId) {
+                addMessageToChat(data);
+            }
+        });
+
+        // Scroll to bottom
+        scrollToBottom();
+    });
+
+    function handleKeyPress(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            sendMessage(event);
+        }
+    }
+
+    function sendMessage(event) {
+        event.preventDefault();
+        
+        const messageInput = document.getElementById('message-input');
+        const fileInput = document.getElementById('file-input');
+        const content = messageInput.value.trim();
+        
+        if (!content && !fileInput.files.length) {
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('content_enc', content);
+        
+        if (fileInput.files.length > 0) {
+            formData.append('file', fileInput.files[0]);
+        }
+
+        fetch(`/send_message/${chatId}`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                messageInput.value = '';
+                fileInput.value = '';
+                // Message will be added via socket
+            } else {
+                alert('Ошибка отправки сообщения: ' + (data.message || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Ошибка отправки сообщения');
+        });
+    }
+
+    function addMessageToChat(messageData) {
+        const messagesContainer = document.getElementById('messages-container');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${messageData.sender_id === currentUserId ? 'sent' : 'received'}`;
+        messageDiv.setAttribute('data-message-id', messageData.id);
+
+        const now = new Date();
+        const timeStr = now.getHours().toString().padStart(2, '0') + ':' + 
+                       now.getMinutes().toString().padStart(2, '0');
+
+        messageDiv.innerHTML = `
+            <div class="message-content">
+                ${messageData.sender_id !== currentUserId ? `<div class="message-sender">${messageData.sender_nickname}</div>` : ''}
+                <div class="message-text">${messageData.content}</div>
+                <div class="message-time">${timeStr}</div>
+            </div>
+        `;
+
+        messagesContainer.appendChild(messageDiv);
+        scrollToBottom();
+    }
+
+    function scrollToBottom() {
+        const messagesContainer = document.getElementById('messages-container');
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            if (file.size > maxSize) {
+                alert('Файл слишком большой. Максимальный размер: 10MB');
+                event.target.value = '';
+                return;
+            }
+            
+            // Show file name
+            const label = document.querySelector('label[for="file-input"]');
+            label.textContent = `📎 ${file.name}`;
+        }
+    }
+
+    function syncKeys() {
+        fetch(`/chat/${chatId}/sync_keys`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Ключи синхронизированы с ' + data.other_user_nickname);
+                // Store the key locally
+                localStorage.setItem(`chat_key_${otherUserId}`, data.chat_key);
+            } else {
+                alert('Ошибка синхронизации ключей: ' + (data.message || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Ошибка синхронизации ключей');
+        });
+    }
+
+    // Auto-resize textarea
+    document.getElementById('message-input').addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+</script>
+{% endblock %}

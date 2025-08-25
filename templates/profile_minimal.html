@@ -1,0 +1,346 @@
+{% extends "base_minimal.html" %}
+
+{% block title %}Профиль - Harvest{% endblock %}
+
+{% block head %}
+<style>
+    .profile-grid {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 2rem;
+    }
+
+    .profile-sidebar {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 2rem;
+        height: fit-content;
+    }
+
+    .avatar-section {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        font-weight: 600;
+        margin: 0 auto 1rem;
+    }
+
+    .avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .user-info {
+        text-align: center;
+    }
+
+    .username {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .user-status {
+        color: var(--text-dim);
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+
+    .profile-main {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    .section {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 2rem;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--text);
+    }
+
+    .info-grid {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+    }
+
+    .info-label {
+        color: var(--text-dim);
+        font-size: 0.9rem;
+    }
+
+    .info-value {
+        font-weight: 500;
+    }
+
+    .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+
+    .action-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.5rem;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .action-card:hover {
+        border-color: var(--accent);
+        background: rgba(0, 255, 65, 0.05);
+    }
+
+    .action-icon {
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .action-info {
+        flex: 1;
+    }
+
+    .action-title {
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+    }
+
+    .action-desc {
+        color: var(--text-dim);
+        font-size: 0.85rem;
+    }
+
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .modal-content {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 2rem;
+        width: 90%;
+        max-width: 500px;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .modal-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        color: var(--text-dim);
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0.25rem;
+    }
+
+    .close-btn:hover {
+        color: var(--text);
+    }
+
+    @media (max-width: 768px) {
+        .profile-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            font-size: 2rem;
+        }
+
+        .actions-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-grid">
+    <div class="profile-sidebar">
+        <div class="avatar-section">
+            <div class="avatar">
+                {% if current_user.avatar %}
+                    <img src="{{ url_for('static', filename=current_user.avatar) }}" alt="Аватар">
+                {% else %}
+                    {{ current_user.nickname_enc[0].upper() }}
+                {% endif %}
+            </div>
+            <div class="user-info">
+                <div class="username">{{ current_user.nickname_enc }}</div>
+                <div class="user-status">
+                    {% if current_user.is_admin %}👑 Администратор{% else %}👤 Пользователь{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="avatar">Изменить аватар</label>
+                <input type="file" name="avatar" id="avatar" accept="image/*">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Обновить</button>
+        </form>
+    </div>
+
+    <div class="profile-main">
+        <div class="section">
+            <div class="section-title">Информация о профиле</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Никнейм</span>
+                    <span class="info-value">{{ current_user.nickname_enc }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Дата регистрации</span>
+                    <span class="info-value">Неизвестно</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Статус</span>
+                    <span class="info-value">
+                        {% if current_user.is_admin %}👑 Администратор{% else %}👤 Пользователь{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Действия</div>
+            <div class="actions-grid">
+                <div class="action-card" onclick="showSupportModal()">
+                    <div class="action-icon">📝</div>
+                    <div class="action-info">
+                        <div class="action-title">Создать тикет</div>
+                        <div class="action-desc">Обратиться в службу поддержки</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if is_bot %}
+        <div class="section">
+            <div class="section-title">📢 Массовая рассылка</div>
+            <form method="POST" action="{{ url_for('bot_broadcast') }}">
+                <div class="form-group">
+                    <label for="message">Сообщение для всех пользователей</label>
+                    <textarea name="message" id="message" rows="4" required 
+                              placeholder="Введите сообщение для рассылки..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">📢 Отправить всем</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Модальное окно поддержки -->
+<div id="supportModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">Создать тикет поддержки</div>
+            <button class="close-btn" onclick="hideSupportModal()">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('create_support_ticket') }}" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="subject">Тема</label>
+                <input type="text" id="subject" name="subject" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Описание</label>
+                <textarea id="description" name="description" rows="4" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="user_nickname">Ваш никнейм</label>
+                <input type="text" id="user_nickname" name="user_nickname" value="{{ current_user.nickname_enc }}" required>
+            </div>
+            <div class="form-group">
+                <label for="scammer_nickname">Никнейм нарушителя (если применимо)</label>
+                <input type="text" id="scammer_nickname" name="scammer_nickname">
+            </div>
+            <div class="form-group">
+                <label for="evidence_image">Доказательства (изображение)</label>
+                <input type="file" id="evidence_image" name="evidence_image" accept="image/*">
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" class="btn" onclick="hideSupportModal()">Отмена</button>
+                <button type="submit" class="btn btn-primary">Отправить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showSupportModal() {
+    document.getElementById('supportModal').style.display = 'flex';
+}
+
+function hideSupportModal() {
+    document.getElementById('supportModal').style.display = 'none';
+}
+
+// Закрытие модального окна по клику вне его
+document.getElementById('supportModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        hideSupportModal();
+    }
+});
+</script>
+{% endblock %}

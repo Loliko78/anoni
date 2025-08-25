@@ -1,0 +1,491 @@
+{% extends "base.html" %}
+
+{% block title %}Управление группой{% endblock %}
+
+{% block content %}
+<div class="group-management-page">
+    <div class="group-management-container">
+        <div class="group-management-header">
+            <h2 class="glitch-text" data-text="УПРАВЛЕНИЕ ГРУППОЙ">УПРАВЛЕНИЕ ГРУППОЙ</h2>
+            <div class="group-info">
+                <img src="{{ url_for('static', filename=group.avatar or 'avatars/hacker.svg') }}" alt="group avatar" class="group-avatar">
+                <h3>{{ group.name_enc.decode('utf-8') if group.name_enc else 'Unknown Group' }}</h3>
+                <p>Создатель: {{ creator.nickname_enc if creator else 'Unknown' }}</p>
+            </div>
+        </div>
+        
+        <div class="group-management-content">
+            <!-- Смена аватарки группы -->
+            <div class="group-section">
+                <h4>Сменить аватарку группы:</h4>
+                <form method="POST" action="{{ url_for('group_management', invite_link=invite_link) }}" enctype="multipart/form-data" class="avatar-form">
+                    <div class="avatar-choices">
+                        {% for icon in ['cybermask.svg', 'skull.svg', 'eye.svg', 'terminal.svg', 'hacker.svg'] %}
+                        <label class="avatar-choice">
+                            <input type="radio" name="avatar_choice" value="avatars/{{ icon }}" {% if group.avatar == 'avatars/' + icon %}checked{% endif %}>
+                            <img src="{{ url_for('static', filename='avatars/' + icon) }}" class="avatar-choice-img" alt="avatar">
+                        </label>
+                        {% endfor %}
+                        <label class="avatar-upload">
+                            <input type="file" name="avatar_upload" accept="image/*">
+                            <span class="avatar-upload-label">Загрузить...</span>
+                        </label>
+                    </div>
+                    <button type="submit" name="action" value="change_avatar" class="btn btn-primary">Сохранить аватарку</button>
+                </form>
+            </div>
+            
+            <!-- Участники группы -->
+            <div class="group-section">
+                <h4>Участники группы ({{ group.members|length }}):</h4>
+                <div class="members-list">
+                    {% for member in group.members %}
+                    <div class="member-item">
+                        <img src="{{ url_for('static', filename=member.avatar or 'avatars/cybermask.svg') }}" class="member-avatar" alt="avatar">
+                        <div class="member-info">
+                            <span class="member-nickname">{{ member.nickname_enc }}</span>
+                            {% if member.id == group.creator_id %}
+                                <span class="creator-badge">Создатель</span>
+                            {% endif %}
+                        </div>
+                        {% if member.id != group.creator_id %}
+                        <form method="POST" action="{{ url_for('group_management', invite_link=invite_link) }}" style="display: inline;">
+                            <input type="hidden" name="action" value="remove_member">
+                            <input type="hidden" name="user_id" value="{{ member.id }}">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Удалить участника из группы?')">Удалить</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Добавить участника -->
+            <div class="group-section">
+                <h4>Добавить участника по нику:</h4>
+                <form method="POST" action="{{ url_for('group_management', invite_link=invite_link) }}" class="add-member-form">
+                    <input type="hidden" name="action" value="add_member">
+                    <div class="input-group">
+                        <input type="text" name="nickname" placeholder="Введите ник пользователя" class="member-input" required>
+                        <button type="submit" class="btn btn-primary">Добавить участника</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Пригласительная ссылка -->
+            <div class="group-section">
+                <h4>Пригласительная ссылка:</h4>
+                <div class="invite-link-container">
+                    <input type="text" id="inviteLink" value="{{ request.url_root }}group/join/{{ invite_link }}" readonly class="invite-link-input">
+                    <button onclick="copyInviteLink()" class="btn btn-secondary">Копировать ссылку</button>
+                </div>
+            </div>
+            
+            <!-- Управление ключами -->
+            <div class="group-section">
+                <h4>Управление ключами группы:</h4>
+                <div class="key-management">
+                    <div class="current-key-display">
+                        <strong>Текущий ключ:</strong>
+                        <span id="currentGroupKey">{{ current_group_key or 'Не установлен' }}</span>
+                    </div>
+                    <div class="key-actions">
+                        <button onclick="generateGroupKey()" class="btn btn-secondary">Сгенерировать ключ</button>
+                        <button onclick="clearGroupKey()" class="btn btn-danger">Очистить ключ</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="group-management-actions">
+            <a href="{{ url_for('group_chat', invite_link=invite_link) }}" class="btn btn-primary">Вернуться к группе</a>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">На главную</a>
+        </div>
+    </div>
+</div>
+
+<style>
+.group-management-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+    padding: 2rem;
+}
+
+.group-management-container {
+    background: var(--bg-primary);
+    border: 1px solid var(--main-accent-color);
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+    border-radius: 10px;
+    padding: 3rem;
+    max-width: 900px;
+    width: 100%;
+}
+
+.group-management-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.group-management-header h2 {
+    color: var(--main-accent-color);
+    font-size: 2.5em;
+    margin-bottom: 1rem;
+    text-shadow: 0 0 10px var(--main-accent-color);
+    animation: glitch 2s infinite;
+}
+
+.group-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.group-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    border: 2px solid var(--main-accent-color);
+}
+
+.group-info h3 {
+    color: var(--text-primary);
+    font-size: 1.5em;
+    margin: 0;
+}
+
+.group-info p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.group-management-content {
+    margin-bottom: 3rem;
+}
+
+.group-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.group-section h4 {
+    color: var(--main-accent-color);
+    font-size: 1.3em;
+    margin-bottom: 1rem;
+    border-bottom: 1px dashed var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+.avatar-choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.avatar-choice {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+}
+
+.avatar-choice input[type="radio"] {
+    display: none;
+}
+
+.avatar-choice-img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    background: var(--bg-primary);
+    transition: all 0.3s;
+}
+
+.avatar-choice input[type="radio"]:checked + .avatar-choice-img {
+    border-color: var(--main-accent-color);
+    box-shadow: 0 0 10px var(--main-accent-color);
+}
+
+.avatar-upload {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+}
+
+.avatar-upload input[type="file"] {
+    display: none;
+}
+
+.avatar-upload-label {
+    display: inline-block;
+    padding: 0.5em 1em;
+    background: var(--accent-color);
+    color: var(--text-primary);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.avatar-upload-label:hover {
+    background: var(--accent-hover);
+}
+
+.members-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    background: var(--bg-primary);
+}
+
+.member-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.member-item:last-child {
+    border-bottom: none;
+}
+
+.member-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+}
+
+.member-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.member-nickname {
+    color: var(--text-primary);
+    font-weight: bold;
+}
+
+.creator-badge {
+    color: var(--main-accent-color);
+    font-size: 0.8em;
+    font-style: italic;
+}
+
+.input-group {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.member-input {
+    flex: 1;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 12px;
+    font-family: var(--font-main);
+    font-size: 1em;
+    border-radius: 5px;
+}
+
+.member-input:focus {
+    outline: none;
+    border-color: var(--main-accent-color);
+    box-shadow: 0 0 10px var(--main-accent-color);
+}
+
+.invite-link-container {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.invite-link-input {
+    flex: 1;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 12px;
+    font-family: var(--font-main);
+    font-size: 0.9em;
+    border-radius: 5px;
+    font-family: monospace;
+}
+
+.key-management {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.current-key-display {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    padding: 1rem;
+    border-radius: 5px;
+    font-family: monospace;
+    word-break: break-all;
+}
+
+.key-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.btn {
+    background: var(--main-accent-color);
+    color: var(--background-color);
+    border: none;
+    padding: 10px 20px;
+    font-family: var(--font-main);
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    border-radius: 5px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn:hover {
+    background: var(--secondary-accent-color);
+    box-shadow: 0 0 10px var(--main-accent-color);
+}
+
+.btn.btn-primary {
+    background: var(--main-accent-color);
+}
+
+.btn.btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn.btn-danger {
+    background: var(--error-color);
+    color: var(--text-primary);
+}
+
+.group-management-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+@keyframes glitch {
+    0%, 100% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+}
+
+@media (max-width: 768px) {
+    .group-management-page {
+        padding: 1rem;
+    }
+    
+    .group-management-container {
+        padding: 2rem;
+    }
+    
+    .group-management-header h2 {
+        font-size: 1.8em;
+    }
+    
+    .input-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .invite-link-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .key-actions {
+        flex-direction: column;
+    }
+    
+    .group-management-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .group-management-header h2 {
+        font-size: 1.5em;
+    }
+    
+    .group-section {
+        padding: 1rem;
+    }
+    
+    .member-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .avatar-choices {
+        gap: 0.5rem;
+    }
+}
+</style>
+
+<script>
+function copyInviteLink() {
+    const inviteLink = document.getElementById('inviteLink');
+    if (inviteLink) {
+        inviteLink.select();
+        document.execCommand('copy');
+        alert('Ссылка скопирована в буфер обмена');
+    }
+}
+
+function generateGroupKey() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 32; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    
+    // Сохраняем ключ в localStorage
+    localStorage.setItem('group_key_{{ group.id }}', result);
+    
+    // Обновляем отображение
+    document.getElementById('currentGroupKey').textContent = result;
+    
+    alert('Новый ключ группы сгенерирован и сохранен');
+}
+
+function clearGroupKey() {
+    if (confirm('Очистить ключ группы? Старые сообщения станут недоступны.')) {
+        localStorage.removeItem('group_key_{{ group.id }}');
+        document.getElementById('currentGroupKey').textContent = 'Не установлен';
+        alert('Ключ группы очищен');
+    }
+}
+</script>
+{% endblock %} 

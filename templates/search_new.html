@@ -1,0 +1,95 @@
+{% extends "base_new.html" %}
+
+{% block title %}Поиск - Harvestano{% endblock %}
+
+{% block content %}
+<div class="search-container">
+    <h1 class="mb-3">Поиск пользователей и каналов</h1>
+    
+    <form method="POST" class="mb-3">
+        <div style="display: flex; gap: 1rem; align-items: flex-end;">
+            <div style="flex: 1;">
+                <label for="nickname" style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">
+                    Введите ник или название канала
+                </label>
+                <input type="text" 
+                       id="nickname" 
+                       name="nickname" 
+                       class="input-field" 
+                       placeholder="Поиск..." 
+                       value="{{ request.form.get('nickname', '') }}"
+                       required>
+            </div>
+            <button type="submit" class="btn">Найти</button>
+        </div>
+    </form>
+
+    {% if results %}
+    <div class="search-results">
+        <h2 class="mb-2">Результаты поиска</h2>
+        <div class="chats-list">
+            {% for result in results %}
+            <div class="chat-tile">
+                <div class="chat-avatar" 
+                     style="background: {% if result.type == 'user' %}var(--accent){% elif result.type == 'channel' %}var(--warning){% endif %};">
+                    {% if result.type == 'user' %}
+                        {{ result.nickname[0].upper() }}
+                    {% elif result.type == 'channel' %}
+                        #
+                    {% endif %}
+                </div>
+                <div class="chat-info">
+                    <div class="chat-nick">
+                        {% if result.type == 'user' %}
+                            {{ result.nickname }}
+                        {% elif result.type == 'channel' %}
+                            {{ result.name }}
+                        {% endif %}
+                    </div>
+                    <div class="chat-last">
+                        {% if result.type == 'user' %}
+                            Пользователь
+                        {% elif result.type == 'channel' %}
+                            {{ result.description or 'Канал' }}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="chat-meta">
+                    {% if result.type == 'user' %}
+                        {% if result.chat_id %}
+                            <a href="{{ url_for('chat', chat_id=result.chat_id) }}" class="btn">Открыть чат</a>
+                        {% else %}
+                            <form method="POST" style="display: inline;">
+                                <input type="hidden" name="start_chat" value="{{ result.id }}">
+                                <button type="submit" class="btn">Начать чат</button>
+                            </form>
+                        {% endif %}
+                    {% elif result.type == 'channel' %}
+                        {% if result.is_subscribed %}
+                            <a href="{{ url_for('view_channel', channel_id=result.id) }}" class="btn">Открыть</a>
+                        {% else %}
+                            <form method="POST" action="{{ url_for('subscribe_channel', channel_id=result.id) }}" style="display: inline;">
+                                <button type="submit" class="btn">Подписаться</button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% elif request.method == 'POST' %}
+    <div class="text-center p-3" style="background: var(--bg-secondary); border-radius: var(--radius);">
+        <p style="color: var(--text-secondary);">Ничего не найдено</p>
+    </div>
+    {% endif %}
+
+    <div class="mt-3 p-3" style="background: var(--bg-secondary); border-radius: var(--radius);">
+        <h3 class="mb-2">Быстрые действия</h3>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a href="{{ url_for('create_group') }}" class="btn btn-secondary">Создать группу</a>
+            <a href="{{ url_for('create_channel') }}" class="btn btn-secondary">Создать канал</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
