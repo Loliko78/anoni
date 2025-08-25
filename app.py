@@ -38,6 +38,29 @@ with app.app_context():
     try:
         db.create_all()
         print("Database initialized")
+        
+        # Создаем админа если его нет
+        admin = User.query.filter_by(nickname_enc='azazel').first()
+        if not admin:
+            admin = User(
+                nickname_enc='azazel',
+                password_hash=generate_password_hash('Log1progress'),
+                is_admin=True
+            )
+            db.session.add(admin)
+            print("Admin user created")
+        
+        # Создаем бота если его нет
+        bot = User.query.filter_by(nickname_enc='Harvest').first()
+        if not bot:
+            bot = User(
+                nickname_enc='Harvest',
+                password_hash=generate_password_hash('826945214')
+            )
+            db.session.add(bot)
+            print("Bot user created")
+        
+        db.session.commit()
     except Exception as e:
         print(f"Warning during DB init: {e}")
 
