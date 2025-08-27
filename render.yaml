@@ -1,20 +1,11 @@
 services:
   - type: web
-    name: harvestano
+    name: harvest-messenger
     env: python
-    plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn --worker-class eventlet -w 1 app:app --bind 0.0.0.0:$PORT
+    startCommand: gunicorn -c gunicorn_config.py app:app
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.10.12
-      - key: PORT
-        value: 10000
       - key: DATABASE_URL
-        fromDatabase:
-          name: harvestano-db
-          property: connectionString
-
-databases:
-  - name: harvestano-db
-    plan: free 
+        value: postgresql://username:password@your-ngrok-url:5432/harvest_db
+      - key: FLASK_ENV
+        value: production

@@ -20,7 +20,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__, instance_relative_config=True)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///harvest.db'
+# PostgreSQL через ngrok или локальная SQLite
+if os.environ.get('DATABASE_URL'):
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///harvest.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')
 # app.config['SERVER_NAME'] = 'localhost:5000'
@@ -61,6 +65,24 @@ with app.app_context():
             print("Bot user created")
         
         db.session.commit()
+        
+        # Автобэкап каждый час
+        import threading
+        import time
+        
+        def auto_backup():
+            while True:
+                time.sleep(3600)  # 1 час
+                try:
+                    from telegram_backup import backup_database
+                    backup_database()
+                except Exception as e:
+                    print(f"Backup error: {e}")
+        
+        if os.environ.get('PORT'):  # Только в продакшене
+            backup_thread = threading.Thread(target=auto_backup, daemon=True)
+            backup_thread.start()
+            
     except Exception as e:
         print(f"Warning during DB init: {e}")
 
