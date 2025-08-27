@@ -4,7 +4,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import os
 import json
-from forms import RegisterForm, LoginForm
+from simple_forms import RegisterForm, LoginForm
 from models import User, Chat, Message, File, Group, GroupMember, ReadTracking, Channel, ChannelPost, ChannelSubscriber, ChannelComment, SupportTicket
 import mimetypes
 import uuid
@@ -151,11 +151,11 @@ def register():
         flash('Слишком много попыток входа. Попробуйте позже.', 'error')
         return render_template('register.html')
     
-    form = RegisterForm()
-    if form.validate_on_submit():
-        nickname = form.nickname.data.strip()
-        password = form.password.data
-        confirm_password = form.confirm_password.data
+    form = RegisterForm(request.form)
+    if request.method == 'POST':
+        nickname = request.form.get('nickname', '').strip()
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
         
         if password != confirm_password:
             flash('Пароли не совпадают', 'danger')
