@@ -5,7 +5,7 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn -c gunicorn_config.py app:app
     envVars:
-      - key: DATABASE_URL
-        value: postgresql://username:password@your-ngrok-url:5432/harvest_db
-      - key: FLASK_ENV
-        value: production
+      - key: TELEGRAM_BOT_TOKEN
+        value: 7293066749:AAFg5fXAVZkPx6s7R3drwGEV5pjKZY1f-PM
+      - key: TELEGRAM_CHAT_ID
+        value: "564049757"
