@@ -37,6 +37,57 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
+# Отслеживание онлайн пользователей
+online_users = set()
+
+@socketio.on('connect')
+def on_connect():
+    if current_user.is_authenticated:
+        online_users.add(current_user.id)
+        socketio.emit('user_online', {'user_id': current_user.id}, broadcast=True)
+
+@socketio.on('disconnect')
+def on_disconnect():
+    if current_user.is_authenticated:
+        online_users.discard(current_user.id)
+        socketio.emit('user_offline', {'user_id': current_user.id}, broadcast=True)
+
+@socketio.on('new_message')
+def handle_message(data):
+    if not current_user.is_authenticated:
+        return
+    
+    chat_id = data.get('chat_id')
+    content = data.get('content', '').strip()
+    
+    if not content or not chat_id:
+        return
+    
+    # Проверяем доступ к чату
+    chat = db.session.get(Chat, chat_id)
+    if not chat or (chat.user1_id != current_user.id and chat.user2_id != current_user.id):
+        return
+    
+    # Создаем сообщение
+    message = Message(
+        chat_id=chat_id,
+        sender_id=current_user.id,
+        content_enc=content.encode('utf-8'),
+        type='text'
+    )
+    db.session.add(message)
+    db.session.commit()
+    
+    # Определяем получателя
+    recipient_id = chat.user2_id if chat.user1_id == current_user.id else chat.user1_id
+    
+    # Отправляем уведомление
+    socketio.emit('notification', {
+        'title': f'Новое сообщение от {current_user.nickname_enc}',
+        'body': content[:50] + ('...' if len(content) > 50 else ''),
+        'chat_id': chat_id
+    }, room=f'user_{recipient_id}')
+
 # Инициализация базы данных
 with app.app_context():
     try:
@@ -142,6 +193,13 @@ def record_login_attempt(ip, success):
     
     session['login_attempts'] = attempts
 
+@socketio.on('join_chat')
+def on_join_chat(data):
+    if current_user.is_authenticated:
+        chat_id = data.get('chat_id')
+        join_room(f'chat_{chat_id}')
+        join_room(f'user_{current_user.id}')
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
@@ -217,6 +275,7 @@ def index():
         
         # Получаем информацию о других пользователях в чатах
         chat_users = {}
+        unread_counts = {}
         for chat in chats:
             try:
                 if chat.user1_id == current_user.id:
@@ -224,6 +283,16 @@ def index():
                 else:
                     other_user = chat.user1
                 chat_users[chat.id] = other_user
+                
+                # Подсчитываем непрочитанные сообщения
+                unread = Message.query.filter(
+                    Message.chat_id == chat.id,
+                    Message.sender_id != current_user.id,
+                    ~Message.id.in_(
+                        db.session.query(ReadTracking.message_id).filter_by(user_id=current_user.id)
+                    )
+                ).count()
+                unread_counts[chat.id] = unread
             except:
                 continue
         
@@ -247,6 +316,8 @@ def index():
         return render_template('chats_minimal.html', 
                              chats=chats, 
                              chat_users=chat_users,
+                             unread_counts=unread_counts,
+                             online_users=online_users,
                              groups=groups,
                              channels=channels)
     except Exception as e:
@@ -254,6 +325,8 @@ def index():
         return render_template('chats_minimal.html', 
                              chats=[], 
                              chat_users={},
+                             unread_counts={},
+                             online_users=set(),
                              groups=[],
                              channels=[])
 

@@ -1,0 +1,63 @@
+/* Статусы онлайн/оффлайн */
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 8px;
+    border: 2px solid #1a1a1a;
+}
+
+.status-dot.online {
+    background-color: #00ff41;
+    box-shadow: 0 0 6px #00ff41;
+}
+
+.status-dot.offline {
+    background-color: #ff4444;
+    box-shadow: 0 0 6px #ff4444;
+}
+
+/* Счетчики непрочитанных сообщений */
+.unread-badge {
+    background-color: #00ff41;
+    color: #000;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-left: 8px;
+    display: none;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* Стили для списка чатов */
+.chat-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border-bottom: 1px solid #333;
+    color: #00ff41;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.chat-item:hover {
+    background-color: #2a2a2a;
+    color: #00ff41;
+    text-decoration: none;
+}
+
+.chat-info {
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.chat-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
