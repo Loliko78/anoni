@@ -22,14 +22,19 @@
 .unread-badge {
     background-color: #00ff41;
     color: #000;
-    border-radius: 10px;
-    padding: 2px 6px;
+    border-radius: 12px;
+    padding: 3px 8px;
     font-size: 11px;
     font-weight: bold;
-    margin-left: 8px;
-    display: none;
-    min-width: 18px;
+    min-width: 20px;
     text-align: center;
+    display: inline-block;
+}
+
+.unread-indicator {
+    color: #00ff41;
+    font-size: 12px;
+    margin-left: 5px;
 }
 
 /* Стили для списка чатов */

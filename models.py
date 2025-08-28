@@ -16,6 +16,8 @@ class User(UserMixin, db.Model):
     global_chat_key = Column(String(128), nullable=True)
     global_group_key = Column(String(128), nullable=True)
     blocked_users = Column(Text, nullable=True)  # JSON string of blocked user IDs
+    last_seen = Column(DateTime, nullable=True)
+    is_online = Column(Boolean, default=False)
     chats1 = relationship('Chat', foreign_keys='Chat.user1_id', backref='user1', lazy=True)
     chats2 = relationship('Chat', foreign_keys='Chat.user2_id', backref='user2', lazy=True)
     support_tickets = relationship('SupportTicket', backref='user', lazy=True)
@@ -34,6 +36,7 @@ class Chat(db.Model):
     session_expires = Column(DateTime, nullable=True)
     last_read_user1 = Column(DateTime, nullable=True)
     last_read_user2 = Column(DateTime, nullable=True)
+    last_activity = Column(DateTime, nullable=True)
     messages = relationship('Message', backref='chat', lazy=True)
 
 class Group(db.Model):

@@ -44,13 +44,25 @@ online_users = set()
 def on_connect():
     if current_user.is_authenticated:
         online_users.add(current_user.id)
-        socketio.emit('user_online', {'user_id': current_user.id}, broadcast=True)
+        if hasattr(current_user, 'is_online'):
+            current_user.is_online = True
+        if hasattr(current_user, 'last_seen'):
+            current_user.last_seen = datetime.now(timezone.utc)
+        db.session.commit()
+        socketio.emit('user_online', {'user_id': current_user.id})
+        join_room(f'user_{current_user.id}')
 
 @socketio.on('disconnect')
 def on_disconnect():
     if current_user.is_authenticated:
         online_users.discard(current_user.id)
-        socketio.emit('user_offline', {'user_id': current_user.id}, broadcast=True)
+        if hasattr(current_user, 'is_online'):
+            current_user.is_online = False
+        if hasattr(current_user, 'last_seen'):
+            current_user.last_seen = datetime.now(timezone.utc)
+        db.session.commit()
+        socketio.emit('user_offline', {'user_id': current_user.id})
+        leave_room(f'user_{current_user.id}')
 
 @socketio.on('new_message')
 def handle_message(data):
@@ -250,6 +262,13 @@ def login():
                 flash('Ваш аккаунт заблокирован', 'danger')
                 return render_template('login.html')
             
+            # Обновляем статус пользователя
+            if hasattr(user, 'is_online'):
+                user.is_online = True
+            if hasattr(user, 'last_seen'):
+                user.last_seen = datetime.now(timezone.utc)
+            db.session.commit()
+            
             login_user(user)
             return redirect(url_for('index'))
         else:
@@ -260,6 +279,13 @@ def login():
 @app.route('/logout')
 @login_required
 def logout():
+    # Обновляем статус пользователя
+    if hasattr(current_user, 'is_online'):
+        current_user.is_online = False
+    if hasattr(current_user, 'last_seen'):
+        current_user.last_seen = datetime.now(timezone.utc)
+    db.session.commit()
+    
     logout_user()
     return redirect(url_for('login'))
 
@@ -269,9 +295,14 @@ def logout():
 def index():
     try:
         # Получаем все чаты пользователя
-        chats = Chat.query.filter(
-            (Chat.user1_id == current_user.id) | (Chat.user2_id == current_user.id)
-        ).all()
+        try:
+            chats = Chat.query.filter(
+                (Chat.user1_id == current_user.id) | (Chat.user2_id == current_user.id)
+            ).order_by(Chat.last_activity.desc().nullslast()).all()
+        except:
+            chats = Chat.query.filter(
+                (Chat.user1_id == current_user.id) | (Chat.user2_id == current_user.id)
+            ).all()
         
         # Получаем информацию о других пользователях в чатах
         chat_users = {}
@@ -280,38 +311,70 @@ def index():
             try:
                 if chat.user1_id == current_user.id:
                     other_user = chat.user2
+                    last_read = chat.last_read_user1
                 else:
                     other_user = chat.user1
+                    last_read = chat.last_read_user2
                 chat_users[chat.id] = other_user
                 
                 # Подсчитываем непрочитанные сообщения
-                unread = Message.query.filter(
-                    Message.chat_id == chat.id,
-                    Message.sender_id != current_user.id,
-                    ~Message.id.in_(
-                        db.session.query(ReadTracking.message_id).filter_by(user_id=current_user.id)
-                    )
-                ).count()
+                if last_read:
+                    unread = Message.query.filter(
+                        Message.chat_id == chat.id,
+                        Message.sender_id != current_user.id,
+                        Message.timestamp > last_read
+                    ).count()
+                else:
+                    unread = Message.query.filter(
+                        Message.chat_id == chat.id,
+                        Message.sender_id != current_user.id
+                    ).count()
                 unread_counts[chat.id] = unread
-            except:
+            except Exception as e:
+                print(f"Error processing chat {chat.id}: {e}")
                 continue
         
         # Получаем группы пользователя
         try:
             group_memberships = GroupMember.query.filter_by(user_id=current_user.id).all()
             groups = []
+            group_unread = {}
             for membership in group_memberships:
                 group = db.session.get(Group, membership.group_id)
                 if group:
                     groups.append(group)
+                    # Подсчитываем непрочитанные сообщения в группе
+                    if membership.last_read:
+                        unread = Message.query.filter(
+                            Message.group_id == group.id,
+                            Message.sender_id != current_user.id,
+                            Message.timestamp > membership.last_read
+                        ).count()
+                    else:
+                        unread = Message.query.filter(
+                            Message.group_id == group.id,
+                            Message.sender_id != current_user.id
+                        ).count()
+                    group_unread[group.id] = unread
         except:
             groups = []
+            group_unread = {}
         
         # Получаем каналы
         try:
             channels = Channel.query.filter_by(deleted=False).all()
+            channel_unread = {}
+            for channel in channels:
+                # Подсчитываем новые посты в канале (за последние 24 часа)
+                day_ago = datetime.now(timezone.utc) - timedelta(hours=24)
+                new_posts = ChannelPost.query.filter(
+                    ChannelPost.channel_id == channel.id,
+                    ChannelPost.timestamp > day_ago
+                ).count()
+                channel_unread[channel.id] = new_posts
         except:
             channels = []
+            channel_unread = {}
         
         return render_template('chats_minimal.html', 
                              chats=chats, 
@@ -319,7 +382,9 @@ def index():
                              unread_counts=unread_counts,
                              online_users=online_users,
                              groups=groups,
-                             channels=channels)
+                             group_unread=group_unread,
+                             channels=channels,
+                             channel_unread=channel_unread)
     except Exception as e:
         print(f"Error in index: {e}")
         return render_template('chats_minimal.html', 
@@ -328,7 +393,9 @@ def index():
                              unread_counts={},
                              online_users=set(),
                              groups=[],
-                             channels=[])
+                             group_unread={},
+                             channels=[],
+                             channel_unread={})
 
 @app.route('/search', methods=['GET', 'POST'])
 @login_required
@@ -381,7 +448,10 @@ def chat(chat_id):
         chat.last_read_user1 = datetime.now(timezone.utc)
     else:
         chat.last_read_user2 = datetime.now(timezone.utc)
-        db.session.commit()
+    db.session.commit()
+    
+    # Уведомляем всех пользователей об обновлении счетчиков
+    socketio.emit('chat_read', {'chat_id': chat_id})
     
     return render_template('chat_minimal.html', 
                          chat=chat, 
@@ -766,6 +836,26 @@ def check_ban():
         flash('Ваш аккаунт заблокирован', 'danger')
         return redirect(url_for('login'))
 
+@app.before_request
+def update_last_seen():
+    if current_user.is_authenticated:
+        if hasattr(current_user, 'last_seen'):
+            current_user.last_seen = datetime.now(timezone.utc)
+        if hasattr(current_user, 'is_online'):
+            current_user.is_online = True
+        db.session.commit()
+        
+        # Обновляем статус других пользователей (офлайн если неактивны > 5 секунд)
+        offline_time = datetime.now(timezone.utc) - timedelta(seconds=10)
+        try:
+            db.session.query(User).filter(
+                User.last_seen < offline_time,
+                User.is_online == True
+            ).update({'is_online': False})
+            db.session.commit()
+        except:
+            pass
+
 @app.route('/group/<invite_link>/remove_member/<int:user_id>', methods=['POST'])
 @login_required
 def remove_group_member(invite_link, user_id):
@@ -943,6 +1033,106 @@ def invite_by_nickname(invite_link):
 
 ## Удалена генерация пользовательских ключей (JSON)
 
+@app.route('/api/user_status/<int:user_id>')
+@login_required
+def get_user_status(user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({'error': 'Пользователь не найден'})
+    
+    return jsonify({
+        'user_id': user.id,
+        'is_online': getattr(user, 'is_online', False),
+        'last_seen': getattr(user, 'last_seen', None).isoformat() if getattr(user, 'last_seen', None) else None
+    })
+
+@app.route('/api/push/subscribe', methods=['POST'])
+@login_required
+def push_subscribe():
+    """Подписка на push-уведомления"""
+    subscription = request.get_json()
+    
+    # Сохраняем подписку в базе данных (упрощенно - в поле пользователя)
+    if hasattr(current_user, 'push_subscription'):
+        current_user.push_subscription = json.dumps(subscription)
+    else:
+        # Если поля нет, добавляем через raw SQL
+        try:
+            db.session.execute(
+                "UPDATE user SET push_subscription = ? WHERE id = ?",
+                (json.dumps(subscription), current_user.id)
+            )
+        except:
+            pass
+    
+    try:
+        db.session.commit()
+        return jsonify({'success': True})
+    except:
+        return jsonify({'success': False})
+
+@app.route('/api/unread_counts')
+@login_required
+def get_unread_counts():
+    """Получить актуальные счетчики непрочитанных сообщений"""
+    result = {
+        'chats': {},
+        'groups': {},
+        'channels': {}
+    }
+    
+    # Чаты
+    chats = Chat.query.filter(
+        (Chat.user1_id == current_user.id) | (Chat.user2_id == current_user.id)
+    ).all()
+    
+    for chat in chats:
+        if chat.user1_id == current_user.id:
+            last_read = chat.last_read_user1
+        else:
+            last_read = chat.last_read_user2
+        
+        if last_read:
+            unread = Message.query.filter(
+                Message.chat_id == chat.id,
+                Message.sender_id != current_user.id,
+                Message.timestamp > last_read
+            ).count()
+        else:
+            unread = Message.query.filter(
+                Message.chat_id == chat.id,
+                Message.sender_id != current_user.id
+            ).count()
+        result['chats'][chat.id] = unread
+    
+    # Группы
+    group_memberships = GroupMember.query.filter_by(user_id=current_user.id).all()
+    for membership in group_memberships:
+        if membership.last_read:
+            unread = Message.query.filter(
+                Message.group_id == membership.group_id,
+                Message.sender_id != current_user.id,
+                Message.timestamp > membership.last_read
+            ).count()
+        else:
+            unread = Message.query.filter(
+                Message.group_id == membership.group_id,
+                Message.sender_id != current_user.id
+            ).count()
+        result['groups'][membership.group_id] = unread
+    
+    # Каналы
+    channels = Channel.query.filter_by(deleted=False).all()
+    for channel in channels:
+        day_ago = datetime.now(timezone.utc) - timedelta(hours=24)
+        new_posts = ChannelPost.query.filter(
+            ChannelPost.channel_id == channel.id,
+            ChannelPost.timestamp > day_ago
+        ).count()
+        result['channels'][channel.id] = new_posts
+    
+    return jsonify(result)
+
 @app.route('/notifications/unread_count')
 @login_required
 def get_unread_count():
@@ -1112,6 +1302,14 @@ def on_send_message(data):
         type='file' if file_id else 'text'
     )
     db.session.add(message)
+    
+    # Обновляем активность чата
+    try:
+        if hasattr(chat, 'last_activity'):
+            chat.last_activity = datetime.now(timezone.utc)
+    except:
+        pass
+    
     db.session.commit()
         
     # Отправляем сообщение в комнату
@@ -1127,6 +1325,20 @@ def on_send_message(data):
     }
     
     emit('new_message', message_data, room=f'chat_{chat_id}')
+    
+    # Обновляем счетчики и порядок чатов для всех
+    recipient_id = chat.user2_id if chat.user1_id == current_user.id else chat.user1_id
+    # Уведомляем получателя о новом сообщении
+    emit('update_unread_count', {'chat_id': chat_id, 'type': 'chat'}, room=f'user_{recipient_id}')
+    # Уведомляем отправителя об обновлении порядка
+    emit('update_unread_count', {'chat_id': chat_id, 'type': 'chat'}, room=f'user_{current_user.id}')
+    socketio.emit('chat_activity_update', {'chat_id': chat_id})
+    
+    # Отправляем push-уведомление
+    if content:
+        send_push_notification(recipient_id, f'Новое сообщение от {current_user.nickname_enc}', content[:50], f'/chat/{chat_id}')
+    else:
+        send_push_notification(recipient_id, f'Новое сообщение от {current_user.nickname_enc}', '📄 Файл', f'/chat/{chat_id}')
 
 @socketio.on('send_group_message')
 def on_send_group_message(data):
@@ -1169,6 +1381,17 @@ def on_send_group_message(data):
     }
         
     emit('new_group_message', message_data, room=f'group_{invite_link}')
+    
+    # Обновляем счетчики для всех участников группы
+    members = GroupMember.query.filter_by(group_id=group.id).all()
+    for member in members:
+        if member.user_id != current_user.id:
+            emit('update_unread_count', {'group_id': group.id, 'type': 'group'}, room=f'user_{member.user_id}')
+            # Отправляем push-уведомление
+            if content:
+                send_push_notification(member.user_id, f'Новое сообщение в {group.name}', f'{current_user.nickname_enc}: {content[:30]}', f'/group/{invite_link}')
+            else:
+                send_push_notification(member.user_id, f'Новое сообщение в {group.name}', f'{current_user.nickname_enc}: 📄 Файл', f'/group/{invite_link}')
         
 # Звонки
 @socketio.on('call_start')
@@ -1283,15 +1506,7 @@ def on_call_message(data):
             'message': message
         }, room=call_room)
 
-@socketio.on('connect')
-def on_connect():
-        if current_user.is_authenticated:
-            join_room(f'user_{current_user.id}')
 
-@socketio.on('disconnect')
-def on_disconnect():
-        if current_user.is_authenticated:
-            leave_room(f'user_{current_user.id}')
 
 def emit_new_message(room, message_data):
     socketio.emit('new_message', message_data, room=room)
@@ -1829,6 +2044,42 @@ def update_ticket_status(ticket_id):
         flash('Статус тикета обновлён', 'success')
     
     return redirect(url_for('view_ticket', ticket_id=ticket_id))
+
+def send_push_notification(user_id, title, body, url=None):
+    """Отправляет push-уведомление пользователю"""
+    try:
+        user = db.session.get(User, user_id)
+        if not user:
+            return False
+        
+        # Получаем подписку пользователя
+        subscription_data = None
+        try:
+            result = db.session.execute(
+                "SELECT push_subscription FROM user WHERE id = ?",
+                (user_id,)
+            ).fetchone()
+            if result and result[0]:
+                subscription_data = json.loads(result[0])
+        except:
+            return False
+        
+        if not subscription_data:
+            return False
+        
+        # Отправляем через SocketIO для браузерных уведомлений
+        socketio.emit('browser_notification', {
+            'title': title,
+            'body': body,
+            'url': url or '/'
+        }, room=f'user_{user_id}')
+        
+        print(f"[PUSH] Отправка уведомления: {title} -> {user.nickname_enc}")
+        return True
+        
+    except Exception as e:
+        print(f"[PUSH ERROR] {e}")
+        return False
 
 def send_bot_message(user_id, message_text):
     """Отправляет сообщение от бота пользователю"""

@@ -3,6 +3,7 @@
 {% block title %}Профиль - Harvest{% endblock %}
 
 {% block head %}
+<script src="{{ url_for('static', filename='js/push-notifications.js') }}"></script>
 <style>
     .profile-grid {
         display: grid;
@@ -272,6 +273,8 @@
                         <div class="action-desc">Обратиться в службу поддержки</div>
                     </div>
                 </div>
+                
+
             </div>
         </div>
         
@@ -342,5 +345,7 @@ document.getElementById('supportModal').addEventListener('click', function(e) {
         hideSupportModal();
     }
 });
+
+
 </script>
 {% endblock %}
