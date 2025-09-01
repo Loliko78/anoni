@@ -17,9 +17,6 @@ class PushNotifications {
         
         console.log('[PUSH] Текущее разрешение:', Notification.permission);
         
-        // Запрашиваем разрешение на уведомления
-        await this.requestPermission();
-        
         if ('serviceWorker' in navigator && 'PushManager' in window) {
             try {
                 this.registration = await navigator.serviceWorker.register('/static/js/sw.js');
@@ -86,10 +83,10 @@ class PushNotifications {
         }
         
         try {
-            const notification = new Notification(title, {
-                body: body,
-                icon: '/static/favicon.ico',
-                badge: '/static/favicon.ico',
+            const notification = new Notification('Harvest', {
+                body: `${title}\n${body}`,
+                icon: '/static/harvest_darkweb.svg',
+                badge: '/static/harvest_darkweb.svg',
                 tag: 'harvest-message-' + Date.now(),
                 requireInteraction: false,
                 silent: false,
@@ -143,7 +140,7 @@ class PushNotifications {
         try {
             const subscription = await this.registration.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: this.urlBase64ToUint8Array('BEl62iUYgUivxIkv69yViEuiBIa40HI0DLLuxazjqAKVXTJtkTXaXWKB4qDjSRUt8BlYDBFas2VPKKkOBXcQVxs')
+                applicationServerKey: this.urlBase64ToUint8Array('BH-9g3USQmselLDbnMoenHjinvgDzj2auBkV9VVYPLVv7zJFqcbAGhxenAqFqU0Y_0SruWDHuR-jdyEG_DUgcVo')
             });
             
             console.log('[PUSH] Подписка создана:', subscription);
@@ -184,19 +181,10 @@ class PushNotifications {
 }
 
 // Глобальная переменная для доступа к системе уведомлений
-let pushNotifications;
+window.pushNotifications = null;
 
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[PUSH] Инициализация при загрузке страницы');
-    pushNotifications = new PushNotifications();
-    
-    // Автоматически запрашиваем разрешение при первом посещении
-    setTimeout(() => {
-        if (pushNotifications.subscribe) {
-            pushNotifications.subscribe();
-        }
-    }, 2000);
-    
-
+    window.pushNotifications = new PushNotifications();
 });

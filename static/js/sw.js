@@ -5,23 +5,28 @@ self.addEventListener('push', function(event) {
         
         const options = {
             body: data.body,
-            icon: '/static/favicon.ico',
-            badge: '/static/favicon.ico',
+            icon: data.icon || '/static/harvest_darkweb.svg',
+            badge: data.badge || '/static/harvest_darkweb.svg',
             vibrate: [200, 100, 200],
+            requireInteraction: data.requireInteraction || false,
+            tag: data.tag || 'harvest-message',
             data: {
-                chat_id: data.chat_id,
                 url: data.url || '/'
             },
             actions: [
                 {
                     action: 'open',
-                    title: 'Открыть чат'
+                    title: 'Открыть'
+                },
+                {
+                    action: 'close',
+                    title: 'Закрыть'
                 }
             ]
         };
 
         event.waitUntil(
-            self.registration.showNotification(data.title, options)
+            self.registration.showNotification(data.title || 'Harvest', options)
         );
     }
 });

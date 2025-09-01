@@ -6,6 +6,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/status.css') }}">
 <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
 <script src="{{ url_for('static', filename='js/push-notifications.js') }}"></script>
+<script src="{{ url_for('static', filename='js/notification-prompt.js') }}"></script>
 <style>
     .chats-grid {
         display: grid;
@@ -91,6 +92,47 @@
         margin-right: 1rem;
         flex-shrink: 0;
         font-size: 1.2rem;
+    }
+
+    .chat-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .notification-menu {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.5rem;
+        display: none;
+        z-index: 100;
+    }
+
+    .notification-btn {
+        background: none;
+        border: none;
+        color: var(--text-dim);
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 3px;
+        font-size: 0.9rem;
+    }
+
+    .notification-btn:hover {
+        background: var(--border);
+        color: var(--text);
+    }
+
+    .muted-indicator {
+        color: #ff6b6b;
+        font-size: 0.8rem;
+        margin-left: 0.5rem;
     }
 
     .chat-info {
@@ -205,7 +247,11 @@
                 {% for chat in chats %}
                 <div class="chat-item" data-chat-id="{{ chat.id }}" data-user-id="{{ chat_users[chat.id].id }}" onclick="openChat({{ chat.id }})">
                     <div class="chat-avatar">
-                        {{ chat_users[chat.id].nickname_enc[0].upper() }}
+                        {% if chat_users[chat.id].avatar %}
+                            <img src="{{ url_for('static', filename=chat_users[chat.id].avatar) }}" alt="Avatar">
+                        {% else %}
+                            {{ chat_users[chat.id].nickname_enc[0].upper() }}
+                        {% endif %}
                     </div>
                     <div class="chat-info">
                         <div class="chat-name">
@@ -220,6 +266,7 @@
                         <span class="unread-badge">{{ unread_counts[chat.id] if unread_counts[chat.id] <= 99 else '99+' }}</span>
                         {% endif %}
                         <span class="status-dot {{ 'online' if chat_users[chat.id].__dict__.get('is_online', False) else 'offline' }}"></span>
+                        <button class="notification-btn" onclick="event.stopPropagation(); toggleNotificationMenu('chat', {{ chat.id }})">🔔</button>
                     </div>
                 </div>
                 {% endfor %}
@@ -237,7 +284,11 @@
                 {% for group in groups %}
                 <div class="chat-item" data-group-id="{{ group.id }}" onclick="openGroup('{{ group.invite_link }}')">
                     <div class="chat-avatar" style="background: #ff6b6b;">
-                        {{ group.name[0].upper() if group.name else 'G' }}
+                        {% if group.avatar %}
+                            <img src="{{ url_for('static', filename=group.avatar) }}" alt="Group Avatar">
+                        {% else %}
+                            {{ group.name[0].upper() if group.name else 'G' }}
+                        {% endif %}
                     </div>
                     <div class="chat-info">
                         <div class="chat-name">
@@ -251,6 +302,7 @@
                         {% if group_unread[group.id] > 0 %}
                         <span class="unread-badge">{{ group_unread[group.id] if group_unread[group.id] <= 99 else '99+' }}</span>
                         {% endif %}
+                        <button class="notification-btn" onclick="event.stopPropagation(); toggleNotificationMenu('group', {{ group.id }})">🔔</button>
                     </div>
                 </div>
                 {% endfor %}
@@ -268,7 +320,11 @@
                 {% for channel in channels %}
                 <div class="chat-item" data-channel-id="{{ channel.id }}" onclick="openChannel({{ channel.id }})">
                     <div class="chat-avatar" style="background: #4ecdc4;">
-                        {{ (channel.name if channel.name else 'C')[0].upper() }}
+                        {% if channel.avatar %}
+                            <img src="{{ url_for('static', filename=channel.avatar) }}" alt="Channel Avatar">
+                        {% else %}
+                            {{ (channel.name if channel.name else 'C')[0].upper() }}
+                        {% endif %}
                     </div>
                     <div class="chat-info">
                         <div class="chat-name">
@@ -282,6 +338,7 @@
                         {% if channel_unread[channel.id] > 0 %}
                         <span class="unread-badge">{{ channel_unread[channel.id] if channel_unread[channel.id] <= 99 else '99+' }}</span>
                         {% endif %}
+                        <button class="notification-btn" onclick="event.stopPropagation(); toggleNotificationMenu('channel', {{ channel.id }})">🔔</button>
                     </div>
                 </div>
                 {% endfor %}
@@ -565,5 +622,60 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }, 1000);
 });
+
+// Управление уведомлениями
+function toggleNotificationMenu(type, id) {
+    const menu = document.createElement('div');
+    menu.className = 'notification-menu';
+    menu.style.display = 'block';
+    menu.innerHTML = `
+        <button class="notification-btn" onclick="muteNotifications('${type}', ${id}, 1)">🔇 На 1 час</button><br>
+        <button class="notification-btn" onclick="muteNotifications('${type}', ${id}, 5)">🔇 На 5 часов</button><br>
+        <button class="notification-btn" onclick="muteNotifications('${type}', ${id}, 0)">🔇 Навсегда</button><br>
+        <button class="notification-btn" onclick="unmuteNotifications('${type}', ${id})">🔔 Включить</button>
+    `;
+    
+    document.body.appendChild(menu);
+    
+    const rect = event.target.getBoundingClientRect();
+    menu.style.position = 'fixed';
+    menu.style.left = rect.left - 100 + 'px';
+    menu.style.top = rect.bottom + 5 + 'px';
+    
+    setTimeout(() => {
+        document.addEventListener('click', function closeMenu(e) {
+            if (!menu.contains(e.target)) {
+                menu.remove();
+                document.removeEventListener('click', closeMenu);
+            }
+        });
+    }, 100);
+}
+
+function muteNotifications(type, id, hours) {
+    fetch('/api/mute_notifications', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({type: type, id: id, hours: hours})
+    }).then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+
+function unmuteNotifications(type, id) {
+    fetch('/api/unmute_notifications', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({type: type, id: id})
+    }).then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
 </script>
 {% endblock %}

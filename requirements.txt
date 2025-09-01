@@ -8,3 +8,5 @@ eventlet==0.33.3
 psycopg2-binary==2.9.7
 gunicorn==21.2.0
 requests==2.31.0
+pywebpush==1.14.0
+cryptography>=3.4.8

@@ -1336,9 +1336,9 @@ def on_send_message(data):
     
     # Отправляем push-уведомление
     if content:
-        send_push_notification(recipient_id, f'Новое сообщение от {current_user.nickname_enc}', content[:50], f'/chat/{chat_id}')
+        send_push_notification(recipient_id, f'{current_user.nickname_enc}', content[:100], f'/chat/{chat_id}')
     else:
-        send_push_notification(recipient_id, f'Новое сообщение от {current_user.nickname_enc}', '📄 Файл', f'/chat/{chat_id}')
+        send_push_notification(recipient_id, f'{current_user.nickname_enc}', '📄 Отправил файл', f'/chat/{chat_id}')
 
 @socketio.on('send_group_message')
 def on_send_group_message(data):
@@ -1389,9 +1389,9 @@ def on_send_group_message(data):
             emit('update_unread_count', {'group_id': group.id, 'type': 'group'}, room=f'user_{member.user_id}')
             # Отправляем push-уведомление
             if content:
-                send_push_notification(member.user_id, f'Новое сообщение в {group.name}', f'{current_user.nickname_enc}: {content[:30]}', f'/group/{invite_link}')
+                send_push_notification(member.user_id, f'👥 {group.name}', f'{current_user.nickname_enc}: {content[:80]}', f'/group/{invite_link}')
             else:
-                send_push_notification(member.user_id, f'Новое сообщение в {group.name}', f'{current_user.nickname_enc}: 📄 Файл', f'/group/{invite_link}')
+                send_push_notification(member.user_id, f'👥 {group.name}', f'{current_user.nickname_enc}: 📄 Отправил файл', f'/group/{invite_link}')
         
 # Звонки
 @socketio.on('call_start')
@@ -2048,6 +2048,8 @@ def update_ticket_status(ticket_id):
 def send_push_notification(user_id, title, body, url=None):
     """Отправляет push-уведомление пользователю"""
     try:
+        from pywebpush import webpush, WebPushException
+        
         user = db.session.get(User, user_id)
         if not user:
             return False
@@ -2067,14 +2069,51 @@ def send_push_notification(user_id, title, body, url=None):
         if not subscription_data:
             return False
         
-        # Отправляем через SocketIO для браузерных уведомлений
+        # Данные уведомления
+        payload = json.dumps({
+            'title': 'Harvest',
+            'body': f'{title}\n{body}',
+            'icon': '/static/harvest_darkweb.svg',
+            'badge': '/static/harvest_darkweb.svg',
+            'url': url or '/',
+            'tag': 'harvest-message',
+            'requireInteraction': True
+        })
+        
+        # VAPID ключи
+        vapid_private_key = "sEwQvMwI5xOLdPJfsPxzae0LTQhFF-44oDce2odDEi4"
+        vapid_public_key = "BH-9g3USQmselLDbnMoenHjinvgDzj2auBkV9VVYPLVv7zJFqcbAGhxenAqFqU0Y_0SruWDHuR-jdyEG_DUgcVo"
+        
+        try:
+            # Отправляем Web Push
+            webpush(
+                subscription_info=subscription_data,
+                data=payload,
+                vapid_private_key=vapid_private_key,
+                vapid_claims={
+                    "sub": "mailto:kirill290407@gmail.com"
+                }
+            )
+            print(f"[PUSH] Успешно отправлено: {title} -> {user.nickname_enc}")
+            return True
+            
+        except WebPushException as e:
+            print(f"[PUSH ERROR] WebPush: {e}")
+            # Fallback на SocketIO
+            socketio.emit('browser_notification', {
+                'title': 'Harvest',
+                'body': f'{title}\n{body}',
+                'url': url or '/'
+            }, room=f'user_{user_id}')
+            return True
+        
+    except ImportError:
+        # Если pywebpush не установлен, используем SocketIO
         socketio.emit('browser_notification', {
-            'title': title,
-            'body': body,
+            'title': 'Harvest',
+            'body': f'{title}\n{body}',
             'url': url or '/'
         }, room=f'user_{user_id}')
-        
-        print(f"[PUSH] Отправка уведомления: {title} -> {user.nickname_enc}")
         return True
         
     except Exception as e:
@@ -2137,6 +2176,60 @@ def bot_broadcast():
     
     flash(f'Сообщение отправлено {sent_count} пользователям', 'success')
     return redirect(url_for('profile'))
+
+@app.route('/api/mute_notifications', methods=['POST'])
+@login_required
+def mute_notifications():
+    data = request.get_json()
+    type_name = data.get('type')
+    item_id = data.get('id')
+    hours = data.get('hours', 0)
+    
+    if hours > 0:
+        muted_until = datetime.now(timezone.utc) + timedelta(hours=hours)
+    else:
+        muted_until = datetime(2099, 1, 1, tzinfo=timezone.utc)
+    
+    try:
+        if type_name == 'chat':
+            chat = db.session.get(Chat, item_id)
+            if chat.user1_id == current_user.id:
+                db.session.execute("UPDATE chat SET user1_muted_until = ? WHERE id = ?", (muted_until, item_id))
+            else:
+                db.session.execute("UPDATE chat SET user2_muted_until = ? WHERE id = ?", (muted_until, item_id))
+        elif type_name == 'group':
+            db.session.execute("UPDATE group_member SET muted_until = ? WHERE group_id = ? AND user_id = ?", (muted_until, item_id, current_user.id))
+        elif type_name == 'channel':
+            db.session.execute("UPDATE channel_subscriber SET muted_until = ? WHERE channel_id = ? AND user_id = ?", (muted_until, item_id, current_user.id))
+        
+        db.session.commit()
+        return jsonify({'success': True})
+    except:
+        return jsonify({'success': False})
+
+@app.route('/api/unmute_notifications', methods=['POST'])
+@login_required
+def unmute_notifications():
+    data = request.get_json()
+    type_name = data.get('type')
+    item_id = data.get('id')
+    
+    try:
+        if type_name == 'chat':
+            chat = db.session.get(Chat, item_id)
+            if chat.user1_id == current_user.id:
+                db.session.execute("UPDATE chat SET user1_muted_until = NULL WHERE id = ?", (item_id,))
+            else:
+                db.session.execute("UPDATE chat SET user2_muted_until = NULL WHERE id = ?", (item_id,))
+        elif type_name == 'group':
+            db.session.execute("UPDATE group_member SET muted_until = NULL WHERE group_id = ? AND user_id = ?", (item_id, current_user.id))
+        elif type_name == 'channel':
+            db.session.execute("UPDATE channel_subscriber SET muted_until = NULL WHERE channel_id = ? AND user_id = ?", (item_id, current_user.id))
+        
+        db.session.commit()
+        return jsonify({'success': True})
+    except:
+        return jsonify({'success': False})
 
 @app.route('/create_support_ticket', methods=['POST'])
 @login_required
