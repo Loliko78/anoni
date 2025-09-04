@@ -74,6 +74,14 @@ function initializeSocketIO() {
             }
         });
         
+        // Получение голосового сообщения
+        socket.on('voice_message_received', function(data) {
+            if (data.chat_id == currentChatId) {
+                addVoiceMessage(data);
+                showNotification('Голосовое сообщение', 'success');
+            }
+        });
+        
         // Входящий звонок
         socket.on('incoming_call', function(data) {
             showIncomingCallModal(data);
@@ -199,6 +207,12 @@ function sendSticker(emoji) {
 function addMessage(messageData, animate = true) {
     const messagesContainer = document.getElementById('chatMessages');
     if (!messagesContainer) return;
+    
+    // Проверяем тип сообщения
+    if (messageData.type === 'voice') {
+        addVoiceMessage(messageData, animate);
+        return;
+    }
     
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${messageData.sender_id == currentUserId ? 'sent' : 'received'}`;

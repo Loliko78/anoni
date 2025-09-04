@@ -100,6 +100,60 @@ def handle_message(data):
         'chat_id': chat_id
     }, room=f'user_{recipient_id}')
 
+@socketio.on('voice_message')
+def handle_voice_message(data):
+    if not current_user.is_authenticated:
+        return
+    
+    chat_id = data.get('chat_id')
+    file_id = data.get('file_id')
+    duration = data.get('duration', 0)
+    
+    if not chat_id or not file_id:
+        return
+    
+    # Проверяем доступ к чату
+    chat = db.session.get(Chat, chat_id)
+    if not chat or (chat.user1_id != current_user.id and chat.user2_id != current_user.id):
+        return
+    
+    # Создаем голосовое сообщение
+    message = Message(
+        chat_id=chat_id,
+        sender_id=current_user.id,
+        content_enc=b'',
+        type='voice',
+        file_id=file_id,
+        voice_duration=duration
+    )
+    db.session.add(message)
+    db.session.commit()
+    
+    # Определяем получателя
+    recipient_id = chat.user2_id if chat.user1_id == current_user.id else chat.user1_id
+    
+    # Отправляем голосовое сообщение
+    message_data = {
+        'id': message.id,
+        'type': 'voice',
+        'file_id': file_id,
+        'duration': duration,
+        'sender_id': current_user.id,
+        'sender_name': current_user.nickname_enc,
+        'timestamp': message.timestamp.strftime('%H:%M'),
+        'chat_id': chat_id,
+        'recipient_id': recipient_id
+    }
+    
+    emit('voice_message_received', message_data, room=f'chat_{chat_id}')
+    
+    # Уведомление для получателя
+    socketio.emit('notification', {
+        'title': f'Голосовое сообщение от {current_user.nickname_enc}',
+        'body': f'Голосовое сообщение ({duration} сек.)',
+        'chat_id': chat_id
+    }, room=f'user_{recipient_id}')
+
 # Инициализация базы данных
 with app.app_context():
     try:
@@ -2268,6 +2322,115 @@ def create_support_ticket():
     
     flash('Тикет поддержки создан', 'success')
     return redirect(url_for('profile'))
+
+@app.route('/upload_voice', methods=['POST'])
+@login_required
+def upload_voice():
+    """Загрузка голосового сообщения"""
+    if 'voice' not in request.files:
+        return jsonify({'success': False, 'error': 'Файл не найден'})
+    
+    voice_file = request.files['voice']
+    duration = request.form.get('duration', 0)
+    
+    if voice_file.filename == '':
+        return jsonify({'success': False, 'error': 'Файл не выбран'})
+    
+    # Генерируем уникальное имя файла
+    filename = secure_filename(f"voice_{current_user.id}_{uuid.uuid4().hex}.webm")
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    
+    try:
+        voice_file.save(file_path)
+        
+        # Создаем запись в базе данных
+        file_record = File(
+            filename=filename,
+            original_name=voice_file.filename or 'voice.webm',
+            file_path=f"uploads/{filename}",
+            file_type='audio/webm',
+            uploaded_by=current_user.id
+        )
+        db.session.add(file_record)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'file_id': file_record.id,
+            'duration': int(float(duration)) if duration else 0
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/send_voice_message', methods=['POST'])
+@login_required
+def send_voice_message():
+    """Отправка голосового сообщения"""
+    data = request.get_json()
+    chat_id = data.get('chat_id')
+    file_id = data.get('file_id')
+    duration = data.get('duration', 0)
+    
+    if not chat_id or not file_id:
+        return jsonify({'success': False, 'error': 'Недостаточно данных'})
+    
+    # Проверяем доступ к чату
+    chat = db.session.get(Chat, chat_id)
+    if not chat or (chat.user1_id != current_user.id and chat.user2_id != current_user.id):
+        return jsonify({'success': False, 'error': 'Доступ запрещен'})
+    
+    try:
+        # Создаем голосовое сообщение
+        message = Message(
+            chat_id=chat_id,
+            sender_id=current_user.id,
+            content_enc=b'',  # Пустой контент для голосовых сообщений
+            type='voice',
+            file_id=file_id,
+            voice_duration=duration
+        )
+        db.session.add(message)
+        db.session.commit()
+        
+        # Отправляем через SocketIO
+        socketio.emit('new_voice_message', {
+            'id': message.id,
+            'chat_id': chat_id,
+            'sender_id': current_user.id,
+            'sender_nickname': current_user.nickname_enc,
+            'file_id': file_id,
+            'duration': duration,
+            'timestamp': message.timestamp.isoformat()
+        }, room=f'chat_{chat_id}')
+        
+        return jsonify({'success': True, 'message_id': message.id})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/voice/<int:file_id>')
+@login_required
+def get_voice_file(file_id):
+    """Получение голосового файла"""
+    file_record = db.session.get(File, file_id)
+    if not file_record:
+        abort(404)
+    
+    # Проверяем, что пользователь имеет доступ к файлу
+    message = Message.query.filter_by(file_id=file_id).first()
+    if message:
+        if message.chat_id:
+            chat = db.session.get(Chat, message.chat_id)
+            if chat and (chat.user1_id == current_user.id or chat.user2_id == current_user.id):
+                # Формируем правильный путь к файлу
+                file_path = os.path.join(os.getcwd(), 'static', file_record.file_path)
+                if os.path.exists(file_path):
+                    return send_file(file_path)
+                else:
+                    abort(404)
+    
+    abort(403)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))

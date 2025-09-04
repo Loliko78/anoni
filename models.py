@@ -78,6 +78,7 @@ class Message(db.Model):
     edited_at = Column(DateTime, nullable=True)
     session_id = Column(String(64), nullable=True)
     file_id = Column(Integer, ForeignKey('file.id'), nullable=True)
+    voice_duration = Column(Integer, nullable=True)  # Длительность голосового сообщения в секундах
     file = relationship('File', backref='messages')
     sender = relationship('User', backref='messages')
 

@@ -71,6 +71,61 @@ def init_socketio_handlers(socketio):
                 'chat_id': chat_id
             }, room=f'user_{recipient_id}')
     
+    @socketio.on('voice_message')
+    def handle_voice_message(data):
+        if not current_user.is_authenticated:
+            return
+        
+        chat_id = data.get('chat_id')
+        file_id = data.get('file_id')
+        duration = data.get('duration', 0)
+        
+        if not chat_id or not file_id:
+            return
+        
+        # Проверяем доступ к чату
+        chat = db.session.get(Chat, chat_id)
+        if not chat or (chat.user1_id != current_user.id and chat.user2_id != current_user.id):
+            return
+        
+        # Создаем голосовое сообщение
+        message = Message(
+            chat_id=chat_id,
+            sender_id=current_user.id,
+            content_enc=b'',
+            type='voice',
+            file_id=file_id,
+            voice_duration=duration
+        )
+        db.session.add(message)
+        db.session.commit()
+        
+        # Определяем получателя
+        recipient_id = chat.user2_id if chat.user1_id == current_user.id else chat.user1_id
+        
+        # Отправляем голосовое сообщение
+        message_data = {
+            'id': message.id,
+            'type': 'voice',
+            'file_id': file_id,
+            'duration': duration,
+            'sender_id': current_user.id,
+            'sender_name': current_user.nickname_enc,
+            'timestamp': message.timestamp.strftime('%H:%M'),
+            'chat_id': chat_id,
+            'recipient_id': recipient_id
+        }
+        
+        emit('voice_message_received', message_data, room=f'chat_{chat_id}')
+        
+        # Уведомление для получателя
+        if recipient_id in online_users:
+            emit('notification', {
+                'title': f'Голосовое сообщение от {current_user.nickname_enc}',
+                'body': f'Голосовое сообщение ({duration} сек.)',
+                'chat_id': chat_id
+            }, room=f'user_{recipient_id}')
+    
     @socketio.on('join_chat')
     def on_join_chat(data):
         if current_user.is_authenticated:

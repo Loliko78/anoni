@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест голосовых сообщений</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        
+        .test-container {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background: #00ff88;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #00cc6a;
+        }
+        
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .recording {
+            background: #ff4444 !important;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background: #333;
+        }
+        
+        .error {
+            background: #ff4444;
+        }
+        
+        .success {
+            background: #00ff88;
+            color: #000;
+        }
+        
+        audio {
+            width: 100%;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎤 Тест голосовых сообщений</h1>
+    
+    <div class="test-container">
+        <h3>Проверка поддержки браузера</h3>
+        <div id="browserSupport" class="status">Проверяем...</div>
+    </div>
+    
+    <div class="test-container">
+        <h3>Запись голосового сообщения</h3>
+        <button id="startRecord">🎤 Начать запись</button>
+        <button id="stopRecord" disabled>⏹️ Остановить</button>
+        <button id="playRecord" disabled>▶️ Воспроизвести</button>
+        <div id="recordStatus" class="status">Готов к записи</div>
+        <div id="timer">0:00</div>
+        <audio id="audioPlayer" controls style="display: none;"></audio>
+    </div>
+    
+    <div class="test-container">
+        <h3>Информация</h3>
+        <div id="info" class="status">
+            <p><strong>Требования:</strong></p>
+            <ul>
+                <li>Современный браузер (Chrome 47+, Firefox 25+, Safari 14+)</li>
+                <li>Разрешение на доступ к микрофону</li>
+                <li>HTTPS соединение (для продакшена)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let startTime = null;
+        let timerInterval = null;
+        
+        const startBtn = document.getElementById('startRecord');
+        const stopBtn = document.getElementById('stopRecord');
+        const playBtn = document.getElementById('playRecord');
+        const status = document.getElementById('recordStatus');
+        const timer = document.getElementById('timer');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const browserSupport = document.getElementById('browserSupport');
+        
+        // Проверка поддержки браузера
+        function checkBrowserSupport() {
+            if (typeof MediaRecorder === 'undefined') {
+                browserSupport.innerHTML = '❌ MediaRecorder API не поддерживается';
+                browserSupport.className = 'status error';
+                return false;
+            }
+            
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                browserSupport.innerHTML = '❌ getUserMedia API не поддерживается';
+                browserSupport.className = 'status error';
+                return false;
+            }
+            
+            browserSupport.innerHTML = '✅ Браузер поддерживает голосовые сообщения';
+            browserSupport.className = 'status success';
+            return true;
+        }
+        
+        // Инициализация
+        async function init() {
+            if (!checkBrowserSupport()) {
+                startBtn.disabled = true;
+                return;
+            }
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: 'audio/webm;codecs=opus'
+                });
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    audioPlayer.src = audioUrl;
+                    audioPlayer.style.display = 'block';
+                    playBtn.disabled = false;
+                    
+                    const duration = Math.floor((Date.now() - startTime) / 1000);
+                    status.innerHTML = `✅ Запись завершена (${duration} сек.)`;
+                    status.className = 'status success';
+                };
+                
+                status.innerHTML = '✅ Микрофон готов к работе';
+                status.className = 'status success';
+                
+            } catch (error) {
+                status.innerHTML = `❌ Ошибка доступа к микрофону: ${error.message}`;
+                status.className = 'status error';
+                startBtn.disabled = true;
+            }
+        }
+        
+        // Начать запись
+        function startRecording() {
+            if (!mediaRecorder) return;
+            
+            audioChunks = [];
+            startTime = Date.now();
+            
+            mediaRecorder.start();
+            
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            playBtn.disabled = true;
+            startBtn.classList.add('recording');
+            
+            status.innerHTML = '🎤 Идет запись...';
+            status.className = 'status';
+            
+            // Таймер
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                timer.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                // Автостоп через 60 секунд
+                if (elapsed >= 60) {
+                    stopRecording();
+                }
+            }, 1000);
+        }
+        
+        // Остановить запись
+        function stopRecording() {
+            if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+            
+            mediaRecorder.stop();
+            
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            startBtn.classList.remove('recording');
+            
+            clearInterval(timerInterval);
+        }
+        
+        // Воспроизвести
+        function playRecording() {
+            audioPlayer.play();
+        }
+        
+        // Обработчики событий
+        startBtn.addEventListener('click', startRecording);
+        stopBtn.addEventListener('click', stopRecording);
+        playBtn.addEventListener('click', playRecording);
+        
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
